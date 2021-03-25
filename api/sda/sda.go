@@ -107,7 +107,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 	// Get file header
 	fileDetails, err := database.DB.GetFile(fileID)
 	if err != nil {
-		log.Error("could not retrieve details for file %s, %s", fileID, err)
+		log.Errorf("could not retrieve details for file %s, %s", fileID, err)
 		return fiber.NewError(500, "could not retrieve file details")
 	}
 

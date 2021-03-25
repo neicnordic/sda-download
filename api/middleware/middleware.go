@@ -35,7 +35,7 @@ func TokenMiddleware() fiber.Handler {
 		}
 
 		// Check if token is JWT or opaque
-		if strings.Count(token, ".") == 2 {
+		if strings.Count(token, ".") == 2 { //nolint:nestif
 			log.Debug("token is JWT")
 			// verify token signature
 			verifiedToken, reason := auth.VerifyJWT(auth.Details, token)

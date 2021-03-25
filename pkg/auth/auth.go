@@ -34,7 +34,10 @@ func GetOIDCDetails(url string) OIDCDetails {
 		return u
 	}
 	// Parse response
-	json.Unmarshal(body, &u)
+	errj := json.Unmarshal(body, &u)
+	if errj != nil {
+		log.Errorf("failed to parse JSON response, %s", errj)
+	}
 	return u
 }
 
@@ -147,7 +150,10 @@ func getVisas(url string, token string) Visas {
 		return v
 	}
 	// Parse response
-	json.Unmarshal(body, &v)
+	errj := json.Unmarshal(body, &v)
+	if errj != nil {
+		log.Errorf("failed to parse JSON response, %s", errj)
+	}
 	return v
 }
 
@@ -165,6 +171,10 @@ func GetPermissions(token string) []string {
 		log.Debug("checking visa type")
 		// Check that visa is of type ControlledAccessGrants
 		unknownToken, err := jwt.Parse([]byte(v))
+		if err != nil {
+			log.Errorf("failed to parse visa, %s", err)
+			continue
+		}
 		unknownTokenVisaClaim := unknownToken.PrivateClaims()["ga4gh_visa_v1"]
 		unknownTokenVisa := Visa{}
 		unknownTokenVisaClaimJSON, err := json.Marshal(unknownTokenVisaClaim)
@@ -217,7 +227,7 @@ func GetPermissions(token string) []string {
 		}
 		err = json.Unmarshal(visaClaimJSON, &visa)
 		if err != nil {
-			log.Errorf("failed to parse visa claim JSON into struct, %s", err, visaClaimJSON)
+			log.Errorf("failed to parse visa claim JSON into struct, %s, %s", err, visaClaimJSON)
 			continue
 		}
 		datasetFull := visa.Dataset
