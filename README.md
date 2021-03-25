@@ -3,9 +3,10 @@
 
 ## Configuration
 Configuration is done with environment variables, which can be set manually or loaded from [.env](.env).
+The default location of `.env` is the root directory, and it can be changed with environment variable `DOT_ENV_FILE=`.
 
 ## Run
-Requires database to be running beforehand.
+Requires [sda-db](https://github.com/neicnordic/sda-db) to be running beforehand.
 ```
 go run cmd/main.go
 ```
