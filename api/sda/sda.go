@@ -25,7 +25,8 @@ func Datasets(c *fiber.Ctx) error {
 	}
 
 	// Get permissions
-	datasets := auth.GetPermissions(token)
+	visas := c.Locals("visas")
+	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
 		return fiber.NewError(404, "no datasets found")
 	}
@@ -54,7 +55,8 @@ func Files(c *fiber.Ctx, datasetID string) error {
 	}
 
 	// Get permissions
-	datasets := auth.GetPermissions(token)
+	visas := c.Locals("visas")
+	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
 		return fiber.NewError(404, "no datasets found")
 	}
@@ -84,7 +86,8 @@ func Download(c *fiber.Ctx, fileID string) error {
 	}
 
 	// Get permissions
-	datasets := auth.GetPermissions(token)
+	visas := c.Locals("visas")
+	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
 		return fiber.NewError(404, "no datasets found")
 	}
