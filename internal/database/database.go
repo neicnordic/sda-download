@@ -144,7 +144,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 		"local_ega_ebi.file a, local_ega_ebi.file_dataset b WHERE dataset_id = $1 AND a.file_id=b.file_id;"
 
 	rows, err := db.Query(query, datasetID)
-	if err != nil {
+	if rows.Err() != nil || err != nil {
 		log.Error(err)
 		return nil, err
 	}
