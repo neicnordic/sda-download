@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/joho/godotenv"
+	log "github.com/sirupsen/logrus"
 )
 
 // Config is a global configuration value store
@@ -101,7 +102,10 @@ func GetEnv(key string, def string) string {
 // LoadConfig populates ConfigMap with data
 func LoadConfig(c *ConfigMap) {
 	// Load settings from .env
-	godotenv.Load(".env")
+	err := godotenv.Load(GetEnv("DOT_ENV_FILE", ".env"))
+	if err != nil {
+		log.Errorf("failed to load environment variables from .env, %s", err)
+	}
 	// Populate config structs, place defaults if empty in .env
 	c.App.Host = GetEnv("APP_HOST", "localhost")
 	c.App.Port = GetEnv("APP_PORT", "8080")

@@ -1,8 +1,6 @@
 package middleware
 
 import (
-	"strings"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/pkg/auth"
@@ -34,34 +32,15 @@ func TokenMiddleware() fiber.Handler {
 			return fiber.NewError(errorCode, token)
 		}
 
-		// Check if token is JWT or opaque
-		if strings.Count(token, ".") == 2 {
-			log.Debug("token is JWT")
-			// verify token signature
-			verifiedToken, reason := auth.VerifyJWT(auth.Details, token)
-			if verifiedToken == nil {
-				if reason == "aai" {
-					return fiber.NewError(500, "AAI request failed")
-				} else {
-					return fiber.NewError(401, "bad token")
-				}
-			}
-			// verify token claims, e.g. expiration and issuer
-			valid := auth.ValidateJWT(auth.Details, verifiedToken)
-			if !valid {
-				return fiber.NewError(500, "bad token")
-			}
-		} else {
-			log.Debug("token is opaque")
-			valid, reason := auth.VerifyOpaque(auth.Details, token)
-			if !valid {
-				if reason == "aai" {
-					return fiber.NewError(500, "AAI request failed")
-				} else {
-					return fiber.NewError(401, "bad token")
-				}
-			}
+		// Verify token by attempting to retrieve visas from AAI
+		valid, visas := auth.GetVisas(auth.Details, token)
+		if !valid {
+			return fiber.NewError(401, "bad token")
 		}
+		// Store visas from ga4gh_passport_v1 in the request context for later use
+		// this reduces the number of calls to AAI
+		c.Locals("visas", visas)
+
 		log.Debug("authorization check passed")
 		return c.Next()
 	}

@@ -34,7 +34,10 @@ func GetOIDCDetails(url string) OIDCDetails {
 		return u
 	}
 	// Parse response
-	json.Unmarshal(body, &u)
+	errj := json.Unmarshal(body, &u)
+	if errj != nil {
+		log.Errorf("failed to parse JSON response, %s", errj)
+	}
 	return u
 }
 
@@ -83,21 +86,6 @@ func ValidateJWT(o OIDCDetails, token jwt.Token) bool {
 	return true
 }
 
-// VerifyOpaque sends the token to AAI introspection for remote validation
-func VerifyOpaque(o OIDCDetails, token string) (bool, string) {
-	log.Debug("verifying opaque token")
-	// Verify opaque token by sending it to token introspection
-	headers := map[string]string{}
-	headers["Authorization"] = "Bearer " + token
-	code, _, err := request.Do(o.Userinfo, headers)
-	if code != 200 || err != nil {
-		log.Errorf("request failed, %d, %s", code, err)
-		return false, "token"
-	}
-	log.Debug("opaque token verified")
-	return true, ""
-}
-
 // GetToken parses the token string from header
 func GetToken(header string) (string, int) {
 	if len(header) == 0 {
@@ -133,38 +121,42 @@ type Visa struct {
 	Dataset string `json:"value"`
 }
 
-// getVisas requests the list of visas from userinfo endpoint
-func getVisas(url string, token string) Visas {
+// GetVisas requests the list of visas from userinfo endpoint
+func GetVisas(o OIDCDetails, token string) (bool, []byte) {
 	// Set headers
 	headers := map[string]string{}
 	headers["Authorization"] = "Bearer " + token
-	// Prepare visas
-	var v Visas
 	// Do request
-	code, body, err := request.Do(url, headers)
+	code, body, err := request.Do(o.Userinfo, headers)
 	if code != 200 || err != nil {
 		log.Errorf("request failed, %d, %s", code, err)
-		return v
+		return false, []byte{}
 	}
-	// Parse response
-	json.Unmarshal(body, &v)
-	return v
+	return true, body
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
-func GetPermissions(token string) []string {
+func GetPermissions(visas []byte) []string {
 
 	var datasets []string
 
-	// Get visas
-	visas := getVisas(Details.Userinfo, token)
+	// Parse visas bytes to struct
+	var visaArray Visas
+	err := json.Unmarshal(visas, &visaArray)
+	if err != nil {
+		log.Errorf("failed to parse JSON response, %s", err)
+	}
 
 	// Iterate visas
-	for _, v := range visas.Visa {
+	for _, v := range visaArray.Visa {
 
 		log.Debug("checking visa type")
 		// Check that visa is of type ControlledAccessGrants
 		unknownToken, err := jwt.Parse([]byte(v))
+		if err != nil {
+			log.Errorf("failed to parse visa, %s", err)
+			continue
+		}
 		unknownTokenVisaClaim := unknownToken.PrivateClaims()["ga4gh_visa_v1"]
 		unknownTokenVisa := Visa{}
 		unknownTokenVisaClaimJSON, err := json.Marshal(unknownTokenVisaClaim)
@@ -217,7 +209,7 @@ func GetPermissions(token string) []string {
 		}
 		err = json.Unmarshal(visaClaimJSON, &visa)
 		if err != nil {
-			log.Errorf("failed to parse visa claim JSON into struct, %s", err, visaClaimJSON)
+			log.Errorf("failed to parse visa claim JSON into struct, %s, %s", err, visaClaimJSON)
 			continue
 		}
 		datasetFull := visa.Dataset
