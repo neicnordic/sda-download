@@ -25,7 +25,7 @@ func main() {
 	// Connect to database
 	db, err := database.NewDB(config.Config.DB)
 	if err != nil {
-		log.Error("database connection failed")
+		log.Errorf("database connection to %s failed, %s", config.Config.DB.Host, err)
 		panic(err)
 	}
 	defer db.Close()

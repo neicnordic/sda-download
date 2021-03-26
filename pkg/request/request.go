@@ -7,6 +7,7 @@ import (
 
 // Do does a GET request as configured by arguments
 func Do(url string, headers map[string]string) (int, []byte, []error) {
+	log.Debugf("setting up client for http request to %s", url)
 	// Set up client
 	agent := fiber.AcquireAgent()
 	request := agent.Request()
@@ -25,5 +26,6 @@ func Do(url string, headers map[string]string) (int, []byte, []error) {
 	if code != 200 || err != nil {
 		log.Errorf("something went wrong, %s, %d, %s, %s", url, code, body, err)
 	}
+	log.Debugf("http request was successful, status:%d, body_len:%d, err:%s", code, len(body), err)
 	return code, body, err
 }

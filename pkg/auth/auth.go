@@ -25,6 +25,7 @@ type OIDCDetails struct {
 
 // GetOIDCDetails requests OIDC configuration information
 func GetOIDCDetails(url string) OIDCDetails {
+	log.Debugf("requesting OIDC config from %s", url)
 	// Prepare response body struct
 	var u OIDCDetails
 	// Do request
@@ -38,6 +39,7 @@ func GetOIDCDetails(url string) OIDCDetails {
 	if errj != nil {
 		log.Errorf("failed to parse JSON response, %s", errj)
 	}
+	log.Debugf("received OIDC config %s from %s", u, url)
 	return u
 }
 
@@ -52,12 +54,12 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, string) {
 	// Why do we use context.TODO() ? https://pkg.go.dev/context#TODO
 	keyset, err := jwk.Fetch(context.TODO(), o.JWK)
 	if err != nil {
-		log.Errorf("failed to request JWK set, %s", err)
+		log.Errorf("failed to request JWK set from %s, %s", o.JWK, err)
 		return nil, "aai"
 	}
 	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset))
 	if err != nil {
-		log.Errorf("failed to verify token signature, %s", err)
+		log.Errorf("failed to verify token signature of token %s, %s", token, err)
 		return nil, "token"
 	}
 	log.Debug("JWT signature verified")
@@ -72,13 +74,13 @@ func ValidateJWT(o OIDCDetails, token jwt.Token) bool {
 	// if issuer is set, validate issuer (the case for access token)
 	if len(o.Issuer) > 0 {
 		if err := jwt.Validate(token, jwt.WithIssuer(o.Issuer)); err != nil {
-			log.Errorf("failed to validate token claims, %s", err)
+			log.Errorf("failed to validate token claims of token %s, %s", token, err)
 			return false
 		}
 	} else {
 		// else, don't validate issuer (the case for visas)
 		if err := jwt.Validate(token); err != nil {
-			log.Errorf("failed to validate token claims, %s", err)
+			log.Errorf("failed to validate token claims of token %s, %s", token, err)
 			return false
 		}
 	}
@@ -88,6 +90,7 @@ func ValidateJWT(o OIDCDetails, token jwt.Token) bool {
 
 // GetToken parses the token string from header
 func GetToken(header string) (string, int) {
+	log.Debug("parsing access token from header")
 	if len(header) == 0 {
 		log.Debug("authorization check failed")
 		return "access token must be provided", 401
@@ -108,6 +111,7 @@ func GetToken(header string) (string, int) {
 		log.Debug("authorization check failed")
 		return "token string is missing from authorization header", 400
 	}
+	log.Debug("access token found")
 	return token, 0
 }
 
@@ -123,6 +127,7 @@ type Visa struct {
 
 // GetVisas requests the list of visas from userinfo endpoint
 func GetVisas(o OIDCDetails, token string) (bool, []byte) {
+	log.Debugf("requesting visas from %s", o.Userinfo)
 	// Set headers
 	headers := map[string]string{}
 	headers["Authorization"] = "Bearer " + token
@@ -132,12 +137,13 @@ func GetVisas(o OIDCDetails, token string) (bool, []byte) {
 		log.Errorf("request failed, %d, %s", code, err)
 		return false, []byte{}
 	}
+	log.Debug("visas received")
 	return true, body
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
 func GetPermissions(visas []byte) ([]string, error) {
-
+	log.Debug("parsing permissions from visas")
 	var datasets []string
 
 	// Parse visas bytes to struct
@@ -147,6 +153,7 @@ func GetPermissions(visas []byte) ([]string, error) {
 		log.Errorf("failed to parse JSON response, %s", err)
 		return datasets, err
 	}
+	log.Debugf("number of visas to check: %d", len(visaArray.Visa))
 
 	// Iterate visas
 	for _, v := range visaArray.Visa {
@@ -218,19 +225,23 @@ func GetPermissions(visas []byte) ([]string, error) {
 		datasetName := datasetParts[len(datasetParts)-1]
 		exists, err := database.DB.CheckDataset(datasetName)
 		if err != nil {
+			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", datasetName)
 			continue
 		}
 		if exists {
+			log.Debugf("checking dataset list for duplicates of %s", datasetName)
 			// check that dataset name doesn't already exist in return list,
 			// we can get duplicates when using multiple AAIs
 			duplicate := false
 			for i := range datasets {
 				if datasets[i] == datasetName {
 					duplicate = true
+					log.Debugf("found a duplicate: dataset %s is already found, skip", datasetName)
 					continue
 				}
 			}
 			if !duplicate {
+				log.Debugf("no duplicates of dataset: %s, add dataset to list of permissions", datasetName)
 				datasets = append(datasets, datasetName)
 			}
 		}

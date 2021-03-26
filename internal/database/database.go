@@ -64,13 +64,16 @@ func NewDB(config config.DatabaseConfig) (*SQLdb, error) {
 	log.Debugf("Connecting to DB %s:%d on database: %s with user: %s", config.Host, config.Port, config.Database, config.User)
 	db, err := sqlOpen("postgres", connInfo)
 	if err != nil {
+		log.Errorf("failed to connect to database, %s", err)
 		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
+		log.Errorf("could not get response from database, %s", err)
 		return nil, err
 	}
 
+	log.Debug("database connection formed")
 	return &SQLdb{DB: db, ConnInfo: connInfo}, nil
 }
 

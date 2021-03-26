@@ -14,6 +14,7 @@ import (
 
 // Datasets serves a list of permitted datasets
 func Datasets(c *fiber.Ctx) error {
+	log.Debugf("request to /metadata/datasets from %s", c.Context().RemoteIP().String())
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
@@ -51,6 +52,7 @@ func find(datasetID string, datasets []string) bool {
 
 // Files serves file metadata
 func Files(c *fiber.Ctx, datasetID string) error {
+	log.Debugf("request to /metadata/datasets/%s/files from %s", datasetID, c.Context().RemoteIP().String())
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
@@ -88,6 +90,7 @@ func Files(c *fiber.Ctx, datasetID string) error {
 
 // Download serves file contents as bytes
 func Download(c *fiber.Ctx, fileID string) error {
+	log.Debugf("request to /file/%s from %s", fileID, c.Context().RemoteIP().String())
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
