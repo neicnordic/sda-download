@@ -29,12 +29,14 @@ func TokenMiddleware() fiber.Handler {
 		// Check that a token is provided
 		token, errorCode := auth.GetToken(c.Get("Authorization"))
 		if errorCode != 0 {
+			log.Debugf("request rejected, %s", token) // contains error message
 			return fiber.NewError(errorCode, token)
 		}
 
 		// Verify token by attempting to retrieve visas from AAI
 		valid, visas := auth.GetVisas(auth.Details, token)
 		if !valid {
+			log.Debug("failed to validate token at AAI")
 			return fiber.NewError(401, "bad token")
 		}
 		// Store visas from ga4gh_passport_v1 in the request context for later use

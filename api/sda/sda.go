@@ -21,6 +21,7 @@ func Datasets(c *fiber.Ctx) error {
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
 	if errorCode != 0 {
+		log.Debugf("request rejected, %s", token) // contains error message
 		return fiber.NewError(errorCode, token)
 	}
 
@@ -28,6 +29,7 @@ func Datasets(c *fiber.Ctx) error {
 	visas := c.Locals("visas")
 	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
+		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")
 	}
 
@@ -52,6 +54,7 @@ func Files(c *fiber.Ctx, datasetID string) error {
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
 	if errorCode != 0 {
+		log.Debugf("request rejected, %s", token) // contains error message
 		return fiber.NewError(errorCode, token)
 	}
 
@@ -59,6 +62,7 @@ func Files(c *fiber.Ctx, datasetID string) error {
 	visas := c.Locals("visas")
 	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
+		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")
 	}
 
@@ -83,6 +87,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
 	if errorCode != 0 {
+		log.Debugf("request rejected, %s", token) // contains error message
 		return fiber.NewError(errorCode, token)
 	}
 
@@ -90,12 +95,14 @@ func Download(c *fiber.Ctx, fileID string) error {
 	visas := c.Locals("visas")
 	datasets := auth.GetPermissions(visas.([]byte))
 	if len(datasets) == 0 {
+		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")
 	}
 
 	// Check user has permissions for this file (as part of a dataset)
 	dataset, err := database.DB.CheckFilePermission(fileID)
 	if err != nil {
+		log.Debugf("requested fileID %s does not exist", fileID)
 		return fiber.NewError(401, "no datasets found with that file ID")
 	}
 	permission := false
@@ -106,6 +113,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 		}
 	}
 	if !permission {
+		log.Debugf("user requested to view file %s but does not have permissions for dataset %s", fileID, dataset)
 		return fiber.NewError(401, "no permissions to view this file")
 	}
 
