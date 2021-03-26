@@ -1,10 +1,14 @@
 package files
 
 import (
+	"bytes"
+	"io"
 	"io/ioutil"
 	"os"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
+	"github.com/elixir-oslo/crypt4gh/model/headers"
+	"github.com/elixir-oslo/crypt4gh/streaming"
 	"github.com/neicnordic/sda-download/internal/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,4 +47,16 @@ func GetC4GHKey() (*[32]byte, error) {
 		log.Info("crypt4gh private key not configured, re-encryption microservice required")
 		return nil, nil
 	}
+}
+
+// StreamFile returns a stream of file contents
+func StreamFile(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	// Stitch header and file body together
+	hr := bytes.NewReader(header)
+	mr := io.MultiReader(hr, file)
+	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
+	if err != nil {
+		log.Errorf("failed to create Crypt4GH stream reader, %s", err)
+	}
+	return c4ghr, err
 }

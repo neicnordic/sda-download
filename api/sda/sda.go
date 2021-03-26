@@ -1,16 +1,13 @@
 package sda
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"strconv"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
-	"github.com/elixir-oslo/crypt4gh/streaming"
 	"github.com/gofiber/fiber/v2"
-	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/internal/files"
 	"github.com/neicnordic/sda-download/pkg/auth"
 	log "github.com/sirupsen/logrus"
 )
@@ -150,13 +147,12 @@ func Download(c *fiber.Ctx, fileID string) error {
 		coordinates = nil
 	}
 
-	// Stitch header and file body together
-	hr := bytes.NewReader(fileDetails.Header)
-	mr := io.MultiReader(hr, file)
-	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
+	// Get file stream
+	fileStream, err := files.StreamFile(fileDetails.Header, file, coordinates)
 	if err != nil {
-		log.Errorf("failed to create Crypt4GH stream reader, %s", err)
+		log.Errorf("could not prepare file for streaming, %s", err)
+		return fiber.NewError(500, "failed to prepare a file for streaming")
 	}
 
-	return c.SendStream(c4ghr)
+	return c.SendStream(fileStream)
 }
