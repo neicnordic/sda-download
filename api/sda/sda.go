@@ -40,6 +40,7 @@ func find(datasetID string, datasets []string) bool {
 	for i := range datasets {
 		if datasetID == datasets[i] {
 			found = true
+			break
 		}
 	}
 	return found
@@ -101,6 +102,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 	for d := range datasets {
 		if datasets[d] == dataset {
 			permission = true
+			break
 		}
 	}
 	if !permission {
