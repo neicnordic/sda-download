@@ -24,7 +24,11 @@ func Datasets(c *fiber.Ctx) error {
 
 	// Get permissions
 	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
+	datasets, err := auth.GetPermissions(visas.([]byte))
+	if err != nil {
+		log.Errorf("failed to parse dataset permission visas, %s", err)
+		return fiber.NewError(500, "an error occurred while parsing visas")
+	}
 	if len(datasets) == 0 {
 		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")
@@ -57,7 +61,11 @@ func Files(c *fiber.Ctx, datasetID string) error {
 
 	// Get permissions
 	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
+	datasets, err := auth.GetPermissions(visas.([]byte))
+	if err != nil {
+		log.Errorf("failed to parse dataset permission visas, %s", err)
+		return fiber.NewError(500, "an error occurred while parsing visas")
+	}
 	if len(datasets) == 0 {
 		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")
@@ -90,7 +98,11 @@ func Download(c *fiber.Ctx, fileID string) error {
 
 	// Get permissions
 	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
+	datasets, err := auth.GetPermissions(visas.([]byte))
+	if err != nil {
+		log.Errorf("failed to parse dataset permission visas, %s", err)
+		return fiber.NewError(500, "an error occurred while parsing visas")
+	}
 	if len(datasets) == 0 {
 		log.Debug("token carries no dataset permissions matching the database")
 		return fiber.NewError(404, "no datasets found")

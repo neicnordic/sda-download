@@ -136,7 +136,7 @@ func GetVisas(o OIDCDetails, token string) (bool, []byte) {
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
-func GetPermissions(visas []byte) []string {
+func GetPermissions(visas []byte) ([]string, error) {
 
 	var datasets []string
 
@@ -145,6 +145,7 @@ func GetPermissions(visas []byte) []string {
 	err := json.Unmarshal(visas, &visaArray)
 	if err != nil {
 		log.Errorf("failed to parse JSON response, %s", err)
+		return datasets, err
 	}
 
 	// Iterate visas
@@ -236,5 +237,5 @@ func GetPermissions(visas []byte) []string {
 	}
 
 	log.Debugf("matched datasets, %s", datasets)
-	return datasets
+	return datasets, nil
 }
