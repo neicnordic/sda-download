@@ -28,7 +28,7 @@ func TokenMiddleware() fiber.Handler {
 
 		// Check that a token is provided
 		token, errorCode := auth.GetToken(c.Get("Authorization"))
-		if errorCode > 0 {
+		if errorCode != 0 {
 			return fiber.NewError(errorCode, token)
 		}
 

@@ -20,7 +20,7 @@ func Datasets(c *fiber.Ctx) error {
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
+	if errorCode != 0 {
 		return fiber.NewError(errorCode, token)
 	}
 
@@ -51,7 +51,7 @@ func Files(c *fiber.Ctx, datasetID string) error {
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
+	if errorCode != 0 {
 		return fiber.NewError(errorCode, token)
 	}
 
@@ -82,7 +82,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 
 	// Get access token
 	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
+	if errorCode != 0 {
 		return fiber.NewError(errorCode, token)
 	}
 
