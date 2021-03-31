@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/files"
-	"github.com/neicnordic/sda-download/pkg/auth"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -16,26 +15,7 @@ import (
 func Datasets(c *fiber.Ctx) error {
 	log.Debugf("request to /metadata/datasets from %s", c.Context().RemoteIP().String())
 
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode != 0 {
-		log.Debugf("request rejected, %s", token) // contains error message
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets, err := auth.GetPermissions(visas.([]byte))
-	if err != nil {
-		log.Errorf("failed to parse dataset permission visas, %s", err)
-		return fiber.NewError(500, "an error occurred while parsing visas")
-	}
-	if len(datasets) == 0 {
-		log.Debug("token carries no dataset permissions matching the database")
-		return fiber.NewError(404, "no datasets found")
-	}
-
-	return c.JSON(datasets)
+	return c.JSON(c.Locals("datasets"))
 }
 
 // find looks for a dataset name in a list of datasets
@@ -54,26 +34,7 @@ func find(datasetID string, datasets []string) bool {
 func Files(c *fiber.Ctx, datasetID string) error {
 	log.Debugf("request to /metadata/datasets/%s/files from %s", datasetID, c.Context().RemoteIP().String())
 
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode != 0 {
-		log.Debugf("request rejected, %s", token) // contains error message
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets, err := auth.GetPermissions(visas.([]byte))
-	if err != nil {
-		log.Errorf("failed to parse dataset permission visas, %s", err)
-		return fiber.NewError(500, "an error occurred while parsing visas")
-	}
-	if len(datasets) == 0 {
-		log.Debug("token carries no dataset permissions matching the database")
-		return fiber.NewError(404, "no datasets found")
-	}
-
-	if find(datasetID, datasets) {
+	if find(datasetID, c.Locals("datasets").([]string)) {
 		// Get file metadata
 		files, err := database.DB.GetFiles(datasetID)
 		if err != nil {
@@ -92,31 +53,14 @@ func Files(c *fiber.Ctx, datasetID string) error {
 func Download(c *fiber.Ctx, fileID string) error {
 	log.Debugf("request to /file/%s from %s", fileID, c.Context().RemoteIP().String())
 
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode != 0 {
-		log.Debugf("request rejected, %s", token) // contains error message
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets, err := auth.GetPermissions(visas.([]byte))
-	if err != nil {
-		log.Errorf("failed to parse dataset permission visas, %s", err)
-		return fiber.NewError(500, "an error occurred while parsing visas")
-	}
-	if len(datasets) == 0 {
-		log.Debug("token carries no dataset permissions matching the database")
-		return fiber.NewError(404, "no datasets found")
-	}
-
 	// Check user has permissions for this file (as part of a dataset)
 	dataset, err := database.DB.CheckFilePermission(fileID)
 	if err != nil {
 		log.Debugf("requested fileID %s does not exist", fileID)
 		return fiber.NewError(401, "no datasets found with that file ID")
 	}
+	// Get datasets from request context, parsed previously by token middleware
+	datasets := c.Locals("datasets").([]string)
 	permission := false
 	for d := range datasets {
 		if datasets[d] == dataset {
