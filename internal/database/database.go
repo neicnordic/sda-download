@@ -64,13 +64,16 @@ func NewDB(config config.DatabaseConfig) (*SQLdb, error) {
 	log.Debugf("Connecting to DB %s:%d on database: %s with user: %s", config.Host, config.Port, config.Database, config.User)
 	db, err := sqlOpen("postgres", connInfo)
 	if err != nil {
+		log.Errorf("failed to connect to database, %s", err)
 		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
+		log.Errorf("could not get response from database, %s", err)
 		return nil, err
 	}
 
+	log.Debug("database connection formed")
 	return &SQLdb{DB: db, ConnInfo: connInfo}, nil
 }
 
@@ -125,9 +128,13 @@ func (dbs *SQLdb) GetFiles(datasetID string) ([]*FileInfo, error) {
 		count int         = 0
 	)
 
-	for count == 0 || (err != nil && count < dbRetryTimes) {
+	for count < dbRetryTimes {
 		r, err = dbs.getFiles(datasetID)
-		count++
+		if err != nil {
+			count++
+			continue
+		}
+		break
 	}
 	return r, err
 }
@@ -184,9 +191,13 @@ func (dbs *SQLdb) CheckDataset(dataset string) (bool, error) {
 		count int   = 0
 	)
 
-	for count == 0 || (err != nil && count < dbRetryTimes) {
+	for count < dbRetryTimes {
 		r, err = dbs.checkDataset(dataset)
-		count++
+		if err != nil {
+			count++
+			continue
+		}
+		break
 	}
 	return r, err
 }
@@ -214,9 +225,13 @@ func (dbs *SQLdb) CheckFilePermission(fileID string) (string, error) {
 		count int    = 0
 	)
 
-	for count == 0 || (err != nil && count < dbRetryTimes) {
+	for count < dbRetryTimes {
 		r, err = dbs.checkFilePermission(fileID)
-		count++
+		if err != nil {
+			count++
+			continue
+		}
+		break
 	}
 	return r, err
 }
@@ -250,10 +265,13 @@ func (dbs *SQLdb) GetFile(fileID string) (*FileDownload, error) {
 		err   error         = nil
 		count int           = 0
 	)
-
-	for count == 0 || (err != nil && count < dbRetryTimes) {
+	for count < dbRetryTimes {
 		r, err = dbs.getFile(fileID)
-		count++
+		if err != nil {
+			count++
+			continue
+		}
+		break
 	}
 	return r, err
 }

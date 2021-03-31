@@ -14,12 +14,13 @@ func TokenMiddleware() fiber.Handler {
 	// Middleware can be configured here and is run once on startup
 
 	// Initialise OIDC configuration
-	auth.Details = auth.GetOIDCDetails(config.Config.OIDC.ConfigurationURL)
+	details, err := auth.GetOIDCDetails(config.Config.OIDC.ConfigurationURL)
 	log.Info("retrieving OIDC configuration")
-	if (auth.OIDCDetails{}) == auth.Details {
+	if err != nil {
 		// Web app requires the OIDC configuration to run
 		panic("could not retrieve OIDC configuration")
 	}
+	auth.Details = details
 	log.Info("OIDC configuration retrieved")
 
 	// Middleware check is performed here upon request
@@ -27,19 +28,31 @@ func TokenMiddleware() fiber.Handler {
 		log.Debug("begin authorization check")
 
 		// Check that a token is provided
-		token, errorCode := auth.GetToken(c.Get("Authorization"))
-		if errorCode > 0 {
-			return fiber.NewError(errorCode, token)
+		token, code, err := auth.GetToken(c.Get("Authorization"))
+		if err != nil {
+			log.Debugf("request rejected, %s, %s", token, err.Error())
+			return fiber.NewError(code, err.Error())
 		}
 
 		// Verify token by attempting to retrieve visas from AAI
-		valid, visas := auth.GetVisas(auth.Details, token)
-		if !valid {
+		visas, err := auth.GetVisas(auth.Details, token)
+		if err != nil {
+			log.Debug("failed to validate token at AAI")
 			return fiber.NewError(401, "bad token")
 		}
-		// Store visas from ga4gh_passport_v1 in the request context for later use
-		// this reduces the number of calls to AAI
-		c.Locals("visas", visas)
+
+		// Get permissions
+		datasets, err := auth.GetPermissions(visas)
+		if err != nil {
+			log.Errorf("failed to parse dataset permission visas, %s", err)
+			return fiber.NewError(500, "an error occurred while parsing visas")
+		}
+		if len(datasets) == 0 {
+			log.Debug("token carries no dataset permissions matching the database")
+			return fiber.NewError(404, "no datasets found")
+		}
+		// Store list of datasets to request context for use at endpoints
+		c.Locals("datasets", datasets)
 
 		log.Debug("authorization check passed")
 		return c.Next()

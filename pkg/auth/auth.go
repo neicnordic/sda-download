@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/lestrrat-go/jwx/jwk"
@@ -24,21 +25,24 @@ type OIDCDetails struct {
 }
 
 // GetOIDCDetails requests OIDC configuration information
-func GetOIDCDetails(url string) OIDCDetails {
+func GetOIDCDetails(url string) (OIDCDetails, error) {
+	log.Debugf("requesting OIDC config from %s", url)
 	// Prepare response body struct
 	var u OIDCDetails
 	// Do request
-	code, body, err := request.Do(url, nil)
-	if code != 200 || err != nil {
-		log.Errorf("request failed, %d, %s", code, err)
-		return u
+	body, err := request.Do(url, nil)
+	if err != nil {
+		log.Errorf("request failed, %s", err)
+		return u, err
 	}
 	// Parse response
-	errj := json.Unmarshal(body, &u)
-	if errj != nil {
-		log.Errorf("failed to parse JSON response, %s", errj)
+	err = json.Unmarshal(body, &u)
+	if err != nil {
+		log.Errorf("failed to parse JSON response, %s", err)
+		return u, err
 	}
-	return u
+	log.Debugf("received OIDC config %s from %s", u, url)
+	return u, nil
 }
 
 // Visas is used to draw the response bytes to a struct
@@ -47,57 +51,36 @@ type Visas struct {
 }
 
 // VerifyJWT verifies the token signature
-func VerifyJWT(o OIDCDetails, token string) (jwt.Token, string) {
+func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 	log.Debug("verifying JWT signature")
 	// Why do we use context.TODO() ? https://pkg.go.dev/context#TODO
 	keyset, err := jwk.Fetch(context.TODO(), o.JWK)
 	if err != nil {
-		log.Errorf("failed to request JWK set, %s", err)
-		return nil, "aai"
+		log.Errorf("failed to request JWK set from %s, %s", o.JWK, err)
+		return nil, err
 	}
 	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset))
 	if err != nil {
-		log.Errorf("failed to verify token signature, %s", err)
-		return nil, "token"
+		log.Errorf("failed to verify token signature of token %s, %s", token, err)
+		return nil, err
 	}
 	log.Debug("JWT signature verified")
-	return verifiedToken, ""
-}
-
-// ValidateJWT validates the token claims
-func ValidateJWT(o OIDCDetails, token jwt.Token) bool {
-	log.Debug("validating JWT claims")
-	// claims validated implicitly: iat, exp, nbf
-	// claims validated explicitly: iss
-	// if issuer is set, validate issuer (the case for access token)
-	if len(o.Issuer) > 0 {
-		if err := jwt.Validate(token, jwt.WithIssuer(o.Issuer)); err != nil {
-			log.Errorf("failed to validate token claims, %s", err)
-			return false
-		}
-	} else {
-		// else, don't validate issuer (the case for visas)
-		if err := jwt.Validate(token); err != nil {
-			log.Errorf("failed to validate token claims, %s", err)
-			return false
-		}
-	}
-	log.Debug("JWT claims validated")
-	return true
+	return verifiedToken, nil
 }
 
 // GetToken parses the token string from header
-func GetToken(header string) (string, int) {
+func GetToken(header string) (string, int, error) {
+	log.Debug("parsing access token from header")
 	if len(header) == 0 {
 		log.Debug("authorization check failed")
-		return "access token must be provided", 401
+		return "", 401, errors.New("access token must be provided")
 	}
 
 	// Check that Bearer scheme is used
 	headerParts := strings.Split(header, " ")
 	if headerParts[0] != "Bearer" {
 		log.Debug("authorization check failed")
-		return "authorization scheme must be bearer", 400
+		return "", 400, errors.New("authorization scheme must be bearer")
 	}
 
 	// Check that header contains a token string
@@ -106,9 +89,10 @@ func GetToken(header string) (string, int) {
 		token = headerParts[1]
 	} else {
 		log.Debug("authorization check failed")
-		return "token string is missing from authorization header", 400
+		return "", 400, errors.New("token string is missing from authorization header")
 	}
-	return token, 0
+	log.Debug("access token found")
+	return token, 0, nil
 }
 
 type JKU struct {
@@ -122,22 +106,24 @@ type Visa struct {
 }
 
 // GetVisas requests the list of visas from userinfo endpoint
-func GetVisas(o OIDCDetails, token string) (bool, []byte) {
+func GetVisas(o OIDCDetails, token string) ([]byte, error) {
+	log.Debugf("requesting visas from %s", o.Userinfo)
 	// Set headers
 	headers := map[string]string{}
 	headers["Authorization"] = "Bearer " + token
 	// Do request
-	code, body, err := request.Do(o.Userinfo, headers)
-	if code != 200 || err != nil {
-		log.Errorf("request failed, %d, %s", code, err)
-		return false, []byte{}
+	body, err := request.Do(o.Userinfo, headers)
+	if err != nil {
+		log.Errorf("request failed, %s", err)
+		return []byte{}, err
 	}
-	return true, body
+	log.Debug("visas received")
+	return body, nil
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
-func GetPermissions(visas []byte) []string {
-
+func GetPermissions(visas []byte) ([]string, error) {
+	log.Debug("parsing permissions from visas")
 	var datasets []string
 
 	// Parse visas bytes to struct
@@ -145,7 +131,9 @@ func GetPermissions(visas []byte) []string {
 	err := json.Unmarshal(visas, &visaArray)
 	if err != nil {
 		log.Errorf("failed to parse JSON response, %s", err)
+		return datasets, err
 	}
+	log.Debugf("number of visas to check: %d", len(visaArray.Visa))
 
 	// Iterate visas
 	for _, v := range visaArray.Visa {
@@ -187,14 +175,13 @@ func GetPermissions(visas []byte) []string {
 			JWK: header.Signatures()[0].ProtectedHeaders().JWKSetURL(),
 		}
 		// Verify visa signature
-		verifiedVisa, errorMessage := VerifyJWT(o, v)
-		if len(errorMessage) > 0 {
-			log.Errorf("failed to validate visa, %s", errorMessage)
+		verifiedVisa, err := VerifyJWT(o, v)
+		if err != nil {
+			log.Errorf("failed to validate visa, %s", err)
 			continue
 		}
-		// Validate visa claims, e.g. expiration
-		valid := ValidateJWT(o, verifiedVisa)
-		if !valid {
+		// Validate visa claims, exp, iat, nbf
+		if err := jwt.Validate(verifiedVisa); err != nil {
 			log.Error("failed to validate visa")
 			continue
 		}
@@ -217,24 +204,28 @@ func GetPermissions(visas []byte) []string {
 		datasetName := datasetParts[len(datasetParts)-1]
 		exists, err := database.DB.CheckDataset(datasetName)
 		if err != nil {
+			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", datasetName)
 			continue
 		}
 		if exists {
+			log.Debugf("checking dataset list for duplicates of %s", datasetName)
 			// check that dataset name doesn't already exist in return list,
 			// we can get duplicates when using multiple AAIs
 			duplicate := false
 			for i := range datasets {
 				if datasets[i] == datasetName {
 					duplicate = true
+					log.Debugf("found a duplicate: dataset %s is already found, skip", datasetName)
 					continue
 				}
 			}
 			if !duplicate {
+				log.Debugf("no duplicates of dataset: %s, add dataset to list of permissions", datasetName)
 				datasets = append(datasets, datasetName)
 			}
 		}
 	}
 
 	log.Debugf("matched datasets, %s", datasets)
-	return datasets
+	return datasets, nil
 }

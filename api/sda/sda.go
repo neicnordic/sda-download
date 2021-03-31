@@ -1,37 +1,21 @@
 package sda
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"strconv"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
-	"github.com/elixir-oslo/crypt4gh/streaming"
 	"github.com/gofiber/fiber/v2"
-	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
-	"github.com/neicnordic/sda-download/pkg/auth"
+	"github.com/neicnordic/sda-download/internal/files"
 	log "github.com/sirupsen/logrus"
 )
 
 // Datasets serves a list of permitted datasets
 func Datasets(c *fiber.Ctx) error {
+	log.Debugf("request to /metadata/datasets from %s", c.Context().RemoteIP().String())
 
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
-	if len(datasets) == 0 {
-		return fiber.NewError(404, "no datasets found")
-	}
-
-	return c.JSON(datasets)
+	return c.JSON(c.Locals("datasets"))
 }
 
 // find looks for a dataset name in a list of datasets
@@ -40,6 +24,7 @@ func find(datasetID string, datasets []string) bool {
 	for i := range datasets {
 		if datasetID == datasets[i] {
 			found = true
+			break
 		}
 	}
 	return found
@@ -47,21 +32,9 @@ func find(datasetID string, datasets []string) bool {
 
 // Files serves file metadata
 func Files(c *fiber.Ctx, datasetID string) error {
+	log.Debugf("request to /metadata/datasets/%s/files from %s", datasetID, c.Context().RemoteIP().String())
 
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
-	if len(datasets) == 0 {
-		return fiber.NewError(404, "no datasets found")
-	}
-
-	if find(datasetID, datasets) {
+	if find(datasetID, c.Locals("datasets").([]string)) {
 		// Get file metadata
 		files, err := database.DB.GetFiles(datasetID)
 		if err != nil {
@@ -78,32 +51,25 @@ func Files(c *fiber.Ctx, datasetID string) error {
 
 // Download serves file contents as bytes
 func Download(c *fiber.Ctx, fileID string) error {
-
-	// Get access token
-	token, errorCode := auth.GetToken(c.Get("Authorization"))
-	if errorCode > 0 {
-		return fiber.NewError(errorCode, token)
-	}
-
-	// Get permissions
-	visas := c.Locals("visas")
-	datasets := auth.GetPermissions(visas.([]byte))
-	if len(datasets) == 0 {
-		return fiber.NewError(404, "no datasets found")
-	}
+	log.Debugf("request to /file/%s from %s", fileID, c.Context().RemoteIP().String())
 
 	// Check user has permissions for this file (as part of a dataset)
 	dataset, err := database.DB.CheckFilePermission(fileID)
 	if err != nil {
+		log.Debugf("requested fileID %s does not exist", fileID)
 		return fiber.NewError(401, "no datasets found with that file ID")
 	}
+	// Get datasets from request context, parsed previously by token middleware
+	datasets := c.Locals("datasets").([]string)
 	permission := false
 	for d := range datasets {
 		if datasets[d] == dataset {
 			permission = true
+			break
 		}
 	}
 	if !permission {
+		log.Debugf("user requested to view file %s but does not have permissions for dataset %s", fileID, dataset)
 		return fiber.NewError(401, "no permissions to view this file")
 	}
 
@@ -140,13 +106,12 @@ func Download(c *fiber.Ctx, fileID string) error {
 		coordinates = nil
 	}
 
-	// Stitch header and file body together
-	hr := bytes.NewReader(fileDetails.Header)
-	mr := io.MultiReader(hr, file)
-	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
+	// Get file stream
+	fileStream, err := files.StreamFile(fileDetails.Header, file, coordinates)
 	if err != nil {
-		log.Errorf("failed to create Crypt4GH stream reader, %s", err)
+		log.Errorf("could not prepare file for streaming, %s", err)
+		return fiber.NewError(500, "failed to prepare a file for streaming")
 	}
 
-	return c.SendStream(c4ghr)
+	return c.SendStream(fileStream)
 }
