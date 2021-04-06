@@ -2,19 +2,18 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/pkg/auth"
 	log "github.com/sirupsen/logrus"
 )
 
 // TokenMiddleware performs access token verification and validation
 // JWTs are verified and validated by the app, opaque tokens are sent to AAI for verification
-func TokenMiddleware() fiber.Handler {
+func TokenMiddleware(url string) fiber.Handler {
 	log.Info("starting token middleware")
 	// Middleware can be configured here and is run once on startup
 
 	// Initialise OIDC configuration
-	details, err := auth.GetOIDCDetails(config.Config.OIDC.ConfigurationURL)
+	details, err := auth.GetOIDCDetails(url)
 	log.Info("retrieving OIDC configuration")
 	if err != nil {
 		// Web app requires the OIDC configuration to run
