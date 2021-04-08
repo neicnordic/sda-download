@@ -1,0 +1,21 @@
+app:
+  host: "localhost"
+  port: 8080
+  logLevel: "debug"
+
+c4gh:
+  filepath: "test/doa.sec.pem"
+  passphrase: "doa"
+
+db:
+  host: "localhost"
+  user: "lega_out"
+  password: "lega_out"
+  database: "lega"
+  cacert: ""
+  clientCert: ""
+  clientKey: ""
+  sslmode: "require"
+
+oidc:
+  ConfigurationURL: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"

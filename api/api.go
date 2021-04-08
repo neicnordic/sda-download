@@ -7,10 +7,10 @@ import (
 )
 
 // Setup Setup a fiber app with all of its routes
-func Setup() *fiber.App {
+func Setup(url string) *fiber.App {
 	// Fiber instance
 	app := fiber.New()
-	app.Use(middleware.TokenMiddleware())
+	app.Use(middleware.TokenMiddleware(url))
 
 	// SDA endpoints
 	app.Get("/metadata/datasets", func(c *fiber.Ctx) error {

@@ -1,11 +1,15 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
-	"strconv"
+	"path"
+	"strings"
 
-	"github.com/joho/godotenv"
+	"github.com/elixir-oslo/crypt4gh/keys"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // Config is a global configuration value store
@@ -25,22 +29,12 @@ type AppConfig struct {
 
 	// Port number for this web app
 	// Optional. Default value 8080
-	Port string
+	Port int
 
 	// Logging level
 	// Optional. Default value debug
 	// Possible values error, fatal, info, panic, warn, trace, debug
 	LogLevel string
-
-	// Path to Crypt4GH private key for file decryption
-	// Optional.
-	// TO DO: If left empty, another re-encryption service needs to be called to serve files
-	Crypt4GHKeyFile string
-
-	// Path to Crypt4GH private key password file
-	// Optional.
-	// Required to open Crypt4GHKey file
-	Crypt4GHPassFile string
 
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
@@ -91,35 +85,143 @@ type DatabaseConfig struct {
 	ClientKey string
 }
 
-// GetEnv returns given os.Getenv value, or a default value if os.Getenv is empty
-func GetEnv(key string, def string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+// NewConfig populates ConfigMap with data
+func NewConfig() (*ConfigMap, error) {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.AutomaticEnv()
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.SetConfigType("yaml")
+	if viper.IsSet("configPath") {
+		configPath := viper.GetString("configPath")
+		splitPath := strings.Split(strings.TrimLeft(configPath, "/"), "/")
+		viper.AddConfigPath(path.Join(splitPath...))
 	}
-	return def
+
+	if viper.IsSet("configFile") {
+		viper.SetConfigFile(viper.GetString("configFile"))
+	}
+
+	// defaults
+	viper.SetDefault("app.host", "localhost")
+	viper.SetDefault("app.port", 8080)
+	viper.SetDefault("app.LogLevel", "info")
+
+	if err := viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			log.Infoln("No config file found, using ENVs only")
+		} else {
+			return nil, err
+		}
+	}
+	requiredConfVars := []string{
+		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
+	}
+
+	for _, s := range requiredConfVars {
+		if !viper.IsSet(s) || viper.GetString(s) == "" {
+			return nil, fmt.Errorf("%s not set", s)
+		}
+	}
+
+	if viper.IsSet("app.LogLevel") {
+		stringLevel := viper.GetString("app.LogLevel")
+		intLevel, err := log.ParseLevel(stringLevel)
+		if err != nil {
+			log.Printf("Log level '%s' not supported, setting to 'trace'", stringLevel)
+			intLevel = log.TraceLevel
+		}
+		log.SetLevel(intLevel)
+		log.Printf("Setting log level to '%s'", stringLevel)
+	}
+
+	c := &ConfigMap{}
+	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
+	err := c.appConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.configDatabase()
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
-// LoadConfig populates ConfigMap with data
-func LoadConfig(c *ConfigMap) {
-	// Load settings from .env
-	err := godotenv.Load(GetEnv("DOT_ENV_FILE", ".env"))
+// appConfig sets required settings
+func (c *ConfigMap) appConfig() error {
+	c.App.Host = viper.GetString("app.host")
+	c.App.Port = viper.GetInt("app.port")
+
+	var err error
+	c.App.Crypt4GHKey, err = GetC4GHKey()
 	if err != nil {
-		log.Errorf("failed to load environment variables from .env, %s", err)
+		return err
 	}
-	// Populate config structs, place defaults if empty in .env
-	c.App.Host = GetEnv("APP_HOST", "localhost")
-	c.App.Port = GetEnv("APP_PORT", "8080")
-	c.App.LogLevel = GetEnv("APP_LOG_LEVEL", "debug")
-	c.App.Crypt4GHKeyFile = GetEnv("APP_CRYPT4GH_KEY", "")
-	c.App.Crypt4GHPassFile = GetEnv("APP_CRYPT4GH_PASS", "")
-	c.OIDC.ConfigurationURL = GetEnv("OIDC_CONFIGURATION_URL", "")
-	c.DB.Host = GetEnv("DB_HOST", "localhost")
-	c.DB.Port, _ = strconv.Atoi(GetEnv("DB_PORT", "5432"))
-	c.DB.User = GetEnv("DB_USER", "lega_out")
-	c.DB.Password = GetEnv("DB_PASS", "lega_out")
-	c.DB.Database = GetEnv("DB_NAME", "lega")
-	c.DB.SslMode = GetEnv("DB_SSL_MODE", "")
-	c.DB.CACert = GetEnv("DB_CA_CERT", "")
-	c.DB.ClientCert = GetEnv("DB_CLIENT_CERT", "")
-	c.DB.ClientKey = GetEnv("DB_CLIENT_KEY", "")
+	return nil
+}
+
+// configDatabase provides configuration for the database
+func (c *ConfigMap) configDatabase() error {
+	db := DatabaseConfig{}
+
+	// defaults
+	viper.SetDefault("db.port", 5432)
+	viper.SetDefault("db.sslmode", "verify-full")
+
+	// All these are required
+	db.Port = viper.GetInt("db.port")
+	db.Host = viper.GetString("db.host")
+	db.User = viper.GetString("db.user")
+	db.Password = viper.GetString("db.password")
+	db.Database = viper.GetString("db.database")
+
+	// Optional settings
+	if viper.IsSet("db.port") {
+		db.Port = viper.GetInt("db.port")
+	}
+	if viper.IsSet("db.sslmode") {
+		db.SslMode = viper.GetString("db.sslmode")
+	}
+	if db.SslMode == "verify-full" {
+		// Since verify-full is specified, these are required.
+		if !(viper.IsSet("db.clientCert") && viper.IsSet("db.clientKey")) {
+			return errors.New("when db.sslMode is set to verify-full both db.clientCert and db.clientKey are needed")
+		}
+	}
+	if viper.IsSet("db.clientKey") {
+		db.ClientKey = viper.GetString("db.clientKey")
+	}
+	if viper.IsSet("db.clientCert") {
+		db.ClientCert = viper.GetString("db.clientCert")
+	}
+	if viper.IsSet("db.cacert") {
+		db.CACert = viper.GetString("db.cacert")
+	}
+	c.DB = db
+	return nil
+}
+
+// GetC4GHKey reads and decrypts and returns the c4gh key
+func GetC4GHKey() (*[32]byte, error) {
+	log.Info("reading crypt4gh private key")
+	keyPath := viper.GetString("c4gh.filepath")
+	passphrase := viper.GetString("c4gh.passphrase")
+
+	// Make sure the key path and passphrase is valid
+	keyFile, err := os.Open(keyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keys.ReadPrivateKey(keyFile, []byte(passphrase))
+	if err != nil {
+		return nil, err
+	}
+
+	keyFile.Close()
+	log.Info("crypt4gh private key loaded")
+	return &key, nil
 }
