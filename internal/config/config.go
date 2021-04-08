@@ -85,7 +85,7 @@ type DatabaseConfig struct {
 	ClientKey string
 }
 
-// LoadConfig populates ConfigMap with data
+// NewConfig populates ConfigMap with data
 func NewConfig() (*ConfigMap, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
@@ -150,6 +150,7 @@ func NewConfig() (*ConfigMap, error) {
 	return c, nil
 }
 
+// appConfig sets required settings
 func (c *ConfigMap) appConfig() error {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
