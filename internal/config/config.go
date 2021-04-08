@@ -206,6 +206,7 @@ func (c *ConfigMap) configDatabase() error {
 
 // GetC4GHKey reads and decrypts and returns the c4gh key
 func GetC4GHKey() (*[32]byte, error) {
+	log.Info("reading crypt4gh private key")
 	keyPath := viper.GetString("c4gh.filepath")
 	passphrase := viper.GetString("c4gh.passphrase")
 
@@ -221,5 +222,6 @@ func GetC4GHKey() (*[32]byte, error) {
 	}
 
 	keyFile.Close()
+	log.Info("crypt4gh private key loaded")
 	return &key, nil
 }
