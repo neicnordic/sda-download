@@ -8,5 +8,5 @@ require (
 	github.com/lestrrat-go/jwx v1.2.1
 	github.com/lib/pq v1.10.2
 	github.com/sirupsen/logrus v1.8.1
-	github.com/spf13/viper v1.7.1
+	github.com/spf13/viper v1.8.0
 )
