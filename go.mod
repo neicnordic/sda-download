@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/elixir-oslo/crypt4gh v1.3.0
-	github.com/gofiber/fiber/v2 v2.15.0
+	github.com/gofiber/fiber/v2 v2.16.0
 	github.com/lestrrat-go/jwx v1.2.4
 	github.com/lib/pq v1.10.2
 	github.com/sirupsen/logrus v1.8.1
