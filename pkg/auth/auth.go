@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -59,11 +60,22 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 		log.Errorf("failed to request JWK set from %s, %s", o.JWK, err)
 		return nil, err
 	}
-	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset))
-	if err != nil {
-		log.Errorf("failed to verify token signature of token %s, %s", token, err)
-		return nil, err
+	key, valid := keyset.Get(0)
+	if valid != true {
+		log.Errorf("cannot get key from set , %s", err)
 	}
+
+	log.Info(key)
+
+	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.UseDefaultKey(true))
+	if err != nil {
+
+		verifiedToken, err = jwt.Parse([]byte(token), jwt.WithVerify(jwa.RS256, key))
+		if err != nil {
+			log.Errorf("failed to verify token signature of token %s, %s", token, err)
+		}
+	}
+	log.Debug(verifiedToken)
 	log.Debug("JWT signature verified")
 	return verifiedToken, nil
 }
