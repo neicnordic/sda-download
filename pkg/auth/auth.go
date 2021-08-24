@@ -61,7 +61,7 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 		return nil, err
 	}
 	key, valid := keyset.Get(0)
-	if valid != true {
+	if !valid {
 		log.Errorf("cannot get key from set , %s", err)
 	}
 
