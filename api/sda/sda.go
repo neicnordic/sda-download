@@ -1,6 +1,7 @@
 package sda
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -42,7 +43,11 @@ func Files(c *fiber.Ctx, datasetID string) error {
 			log.Errorf("database query failed, %s", err)
 			return c.SendStatus(fiber.StatusInternalServerError)
 		}
-		return c.JSON(files)
+		fileshttp, _ := database.DB.GetFiles("https://" + datasetID)
+
+		result := append(files, fileshttp...)
+
+		return c.JSON(result)
 	}
 
 	// no matches in database with given datasetID
@@ -50,7 +55,7 @@ func Files(c *fiber.Ctx, datasetID string) error {
 }
 
 // Download serves file contents as bytes
-func Download(c *fiber.Ctx, fileID string) error {
+func Download(c *fiber.Ctx, fileID string, archivePath string) error {
 	log.Debugf("request to /file/%s from %s", fileID, c.Context().RemoteIP().String())
 
 	// Check user has permissions for this file (as part of a dataset)
@@ -63,7 +68,7 @@ func Download(c *fiber.Ctx, fileID string) error {
 	datasets := c.Locals("datasets").([]string)
 	permission := false
 	for d := range datasets {
-		if datasets[d] == dataset {
+		if datasets[d] == dataset || "https://"+datasets[d] == dataset {
 			permission = true
 			break
 		}
@@ -81,7 +86,8 @@ func Download(c *fiber.Ctx, fileID string) error {
 	}
 
 	// Get archive file handle
-	file, err := os.Open(fileDetails.ArchivePath)
+	path := fmt.Sprintf("%s/%s", archivePath, fileDetails.ArchivePath)
+	file, err := os.Open(path)
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)
 		return fiber.NewError(500, "could not find archive file")

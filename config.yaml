@@ -2,6 +2,7 @@ app:
   host: "localhost"
   port: 8080
   logLevel: "debug"
+  archivePath: "/"
 
 c4gh:
   filepath: "test/doa.sec.pem"

@@ -7,7 +7,7 @@ import (
 )
 
 // Setup Setup a fiber app with all of its routes
-func Setup(url string) *fiber.App {
+func Setup(url string, archivePath string) *fiber.App {
 	// Fiber instance
 	app := fiber.New()
 	app.Use(middleware.TokenMiddleware(url))
@@ -20,7 +20,7 @@ func Setup(url string) *fiber.App {
 		return sda.Files(c, c.Params(("+")))
 	})
 	app.Get("/files/:fileId", func(c *fiber.Ctx) error {
-		return sda.Download(c, c.Params(("fileId")))
+		return sda.Download(c, c.Params(("fileId")), archivePath)
 	})
 
 	// S3 endpoints
