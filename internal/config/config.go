@@ -39,6 +39,8 @@ type AppConfig struct {
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
 	Crypt4GHKey *[32]byte
+
+	ArchivePath string
 }
 
 type OIDCConfig struct {
@@ -106,6 +108,7 @@ func NewConfig() (*ConfigMap, error) {
 	viper.SetDefault("app.host", "localhost")
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("app.LogLevel", "info")
+	viper.SetDefault("app.archivePath", "/")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -154,6 +157,7 @@ func NewConfig() (*ConfigMap, error) {
 func (c *ConfigMap) appConfig() error {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
+	c.App.ArchivePath = viper.GetString("app.archivePath")
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()

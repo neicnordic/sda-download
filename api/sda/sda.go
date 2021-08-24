@@ -81,7 +81,8 @@ func Download(c *fiber.Ctx, fileID string) error {
 	}
 
 	// Get archive file handle
-	file, err := os.Open(fileDetails.ArchivePath)
+	path := fmt.Sprintf("%s/%s", archivePath, fileDetails.ArchivePath)
+	file, err := os.Open(path)
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)
 		return fiber.NewError(500, "could not find archive file")

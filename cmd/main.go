@@ -24,7 +24,7 @@ func main() {
 	defer db.Close()
 	database.DB = db
 	// app contains the web app and endpoints
-	app := api.Setup(conf.OIDC.ConfigurationURL)
+	app := api.Setup(conf.OIDC.ConfigurationURL, conf.App.ArchivePath)
 
 	// Start server
 	log.Fatal(app.Listen(conf.App.Host + ":" + strconv.Itoa(conf.App.Port)))
