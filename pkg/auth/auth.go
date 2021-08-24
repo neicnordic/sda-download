@@ -202,7 +202,7 @@ func GetPermissions(visas []byte) ([]string, error) {
 		datasetFull := visa.Dataset
 		datasetParts := strings.Split(datasetFull, "://")
 		datasetName := datasetParts[len(datasetParts)-1]
-		exists, err := database.DB.CheckDataset(datasetName)
+		exists, err := database.DB.CheckDataset(datasetFull)
 		if err != nil {
 			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", datasetName)
 			continue
