@@ -41,7 +41,7 @@ func TokenMiddleware(url string) fiber.Handler {
 		}
 
 		// Get permissions
-		datasets, err := auth.GetPermissions(visas)
+		datasets, err := auth.GetPermissions(*visas)
 		if err != nil {
 			log.Errorf("failed to parse dataset permission visas, %s", err)
 			return fiber.NewError(500, "an error occurred while parsing visas")
