@@ -1,36 +1,75 @@
 package request
 
 import (
+	"bytes"
+	"crypto/tls"
 	"errors"
+	"net/http"
 	"strconv"
-
-	"github.com/gofiber/fiber/v2"
-	log "github.com/sirupsen/logrus"
+	"time"
 )
 
-// Do does a GET request as configured by arguments
-func Do(url string, headers map[string]string) ([]byte, error) {
-	log.Debugf("setting up client for http request to %s", url)
-	// Set up client
-	agent := fiber.AcquireAgent()
-	request := agent.Request()
-	request.Header.SetMethod(fiber.MethodGet)
-	// Place headers if any exist
-	for k, v := range headers {
-		agent.Request().Header.Set(k, v)
+// Client stores a HTTP client, so that it doesn't need to be initialised on every request
+var Client *http.Client
+
+// InitialiseClient sets up an HTTP client and returns it
+func InitialiseClient() (*http.Client, error) {
+	// Set up HTTP client
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxConnsPerHost = 100
+	t.MaxIdleConnsPerHost = 100
+	t.TLSClientConfig = &tls.Config{
+		MinVersion: tls.VersionTLS12,
 	}
-	// Execute request
-	request.SetRequestURI(url)
-	if err := agent.Parse(); err != nil {
-		log.Errorf("request failed, %s, %s", url, err)
+	client := &http.Client{
+		Timeout:   20 * time.Second,
+		Transport: t}
+	return client, nil
+}
+
+// HTTPNewRequest stores http.NewRequest, which can be substituted in unit tests
+var HTTPNewRequest = http.NewRequest
+
+// MakeRequest builds an authenticated HTTP client
+// which sends HTTP requests and parses the responses
+var MakeRequest = func(method string, url string, headers map[string]string, body []byte) (*http.Response, error) {
+	var (
+		response *http.Response
+		count    int = 0
+	)
+
+	// Build HTTP request
+	request, err := HTTPNewRequest(method, url, bytes.NewBuffer(body))
+	if err != nil {
 		return nil, err
 	}
-	// Read response
-	code, body, err := agent.Bytes()
-	if code != 200 || err != nil {
-		log.Errorf("something went wrong, %s, %d, %s, %s", url, code, body, err)
-		return nil, errors.New(strconv.Itoa(code))
+	// Set headers
+	for k, v := range headers {
+		request.Header.Set(k, v)
 	}
-	log.Debugf("http request was successful, status:%d, body_len:%d, err:%s", code, len(body), err)
-	return body, nil
+
+	// Execute HTTP request
+	// retry the request as specified by httpRetry variable
+	for count == 0 || (err != nil && count < 3) {
+		// In case of an error, response=nil, which can't be closed,
+		// so this lint can be ignored because it would cause a nil pointer deref
+		// nolint:bodyclose
+		response, err = Client.Do(request)
+		count++
+	}
+	if err != nil {
+		return nil, err
+	}
+	// response.Body is closed in the consumer functions
+	// this design lowers memory requirements and makes
+	// downloading of larger files more smooth
+
+	// Check StatusCode in case an error has happened downstream and not catched by the `err!=nil`
+	if response.StatusCode >= 400 {
+		err = errors.New(strconv.Itoa(response.StatusCode))
+		return nil, err
+	}
+
+	return response, err
 }

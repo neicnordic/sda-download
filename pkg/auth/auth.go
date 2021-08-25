@@ -31,24 +31,19 @@ func GetOIDCDetails(url string) (OIDCDetails, error) {
 	// Prepare response body struct
 	var u OIDCDetails
 	// Do request
-	body, err := request.Do(url, nil)
+	response, err := request.MakeRequest("GET", url, nil, nil)
 	if err != nil {
 		log.Errorf("request failed, %s", err)
 		return u, err
 	}
 	// Parse response
-	err = json.Unmarshal(body, &u)
+	err = json.NewDecoder(response.Body).Decode(&u)
 	if err != nil {
 		log.Errorf("failed to parse JSON response, %s", err)
 		return u, err
 	}
 	log.Debugf("received OIDC config %s from %s", u, url)
 	return u, nil
-}
-
-// Visas is used to draw the response bytes to a struct
-type Visas struct {
-	Visa []string `json:"ga4gh_passport_v1"`
 }
 
 // VerifyJWT verifies the token signature
@@ -64,8 +59,6 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 	if !valid {
 		log.Errorf("cannot get key from set , %s", err)
 	}
-
-	log.Info(key)
 
 	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.UseDefaultKey(true))
 	if err != nil {
@@ -111,6 +104,11 @@ type JKU struct {
 	URL string `json:"jku"`
 }
 
+// Visas is used to draw the response bytes to a struct
+type Visas struct {
+	Visa []string `json:"ga4gh_passport_v1"`
+}
+
 // Visa is used to draw the dataset name out of the visa
 type Visa struct {
 	Type    string `json:"type"`
@@ -118,37 +116,37 @@ type Visa struct {
 }
 
 // GetVisas requests the list of visas from userinfo endpoint
-func GetVisas(o OIDCDetails, token string) ([]byte, error) {
+func GetVisas(o OIDCDetails, token string) (*Visas, error) {
 	log.Debugf("requesting visas from %s", o.Userinfo)
 	// Set headers
 	headers := map[string]string{}
 	headers["Authorization"] = "Bearer " + token
 	// Do request
-	body, err := request.Do(o.Userinfo, headers)
+	response, err := request.MakeRequest("GET", o.Userinfo, headers, nil)
 	if err != nil {
 		log.Errorf("request failed, %s", err)
-		return []byte{}, err
+		return nil, err
+	}
+	// Parse response
+	var v Visas
+	err = json.NewDecoder(response.Body).Decode(&v)
+	if err != nil {
+		log.Errorf("failed to parse JSON response, %s", err)
+		return nil, err
 	}
 	log.Debug("visas received")
-	return body, nil
+	return &v, nil
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
-func GetPermissions(visas []byte) ([]string, error) {
+func GetPermissions(visas Visas) ([]string, error) {
 	log.Debug("parsing permissions from visas")
 	var datasets []string
 
-	// Parse visas bytes to struct
-	var visaArray Visas
-	err := json.Unmarshal(visas, &visaArray)
-	if err != nil {
-		log.Errorf("failed to parse JSON response, %s", err)
-		return datasets, err
-	}
-	log.Debugf("number of visas to check: %d", len(visaArray.Visa))
+	log.Debugf("number of visas to check: %d", len(visas.Visa))
 
 	// Iterate visas
-	for _, v := range visaArray.Visa {
+	for _, v := range visas.Visa {
 
 		log.Debug("checking visa type")
 		// Check that visa is of type ControlledAccessGrants
