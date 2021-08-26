@@ -19,7 +19,7 @@ func Setup() *http.Server {
 	r := http.NewServeMux()
 
 	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets)))
-	// r.HandleFunc("/metadata/datasets/", sda.Files)
+	r.Handle("/metadata/datasets/", middleware.TokenMiddleware(http.HandlerFunc(sda.Files)))
 	// r.HandleFunc("/files/", sda.Download)
 
 	// Configure TLS settings
