@@ -67,6 +67,6 @@ func GetDatasets(ctx context.Context) []string {
 		log.Debug("request datasets context is empty")
 		return []string{}
 	}
-	log.Debug("returning %v from request context", datasets)
+	log.Debugf("returning %v from request context", datasets)
 	return datasets.([]string)
 }

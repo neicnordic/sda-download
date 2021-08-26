@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/neicnordic/sda-download/api/middleware"
+	"github.com/neicnordic/sda-download/api/sda"
 	"github.com/neicnordic/sda-download/internal/config"
 	log "github.com/sirupsen/logrus"
 )
@@ -16,7 +18,7 @@ func Setup() *http.Server {
 	log.Info("(2/5) Registering endpoint handlers")
 	r := http.NewServeMux()
 
-	// r.HandleFunc("/metadata/datasets", sda.Datasets)
+	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets)))
 	// r.HandleFunc("/metadata/datasets/", sda.Files)
 	// r.HandleFunc("/files/", sda.Download)
 
