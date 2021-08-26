@@ -19,8 +19,9 @@ func StreamFile(header []byte, file *os.File, coordinates *headers.DataEditListH
 	mr := io.MultiReader(hr, file)
 	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
 	if err != nil {
-		log.Errorf("failed to create Crypt4GH stream reader, %s", err)
+		log.Errorf("failed to create Crypt4GH stream reader, %v", err)
+		return nil, err
 	}
 	log.Debugf("file stream for %s constructed", file.Name())
-	return c4ghr, err
+	return c4ghr, nil
 }
