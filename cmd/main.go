@@ -4,6 +4,7 @@ import (
 	"github.com/neicnordic/sda-download/api"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/pkg/auth"
 	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,14 +16,15 @@ func init() {
 	// Load configuration
 	conf, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("configuration loading failed, reason: %v", err)
+		panic(err)
 	}
 	config.Config = *conf
 
 	// Connect to database
 	db, err := database.NewDB(conf.DB)
 	if err != nil {
-		log.Errorf("database connection to %s failed, %s", conf.DB.Host, err)
+		log.Fatalf("database connection failed, reason: %v", err)
 		panic(err)
 	}
 	defer db.Close()
@@ -31,9 +33,20 @@ func init() {
 	// Initialise HTTP client for making requests
 	client, err := request.InitialiseClient()
 	if err != nil {
+		log.Fatalf("http client init failed, reason: %v", err)
 		panic(err)
 	}
 	request.Client = client
+
+	// Initialise OIDC configuration
+	details, err := auth.GetOIDCDetails(conf.OIDC.ConfigurationURL)
+	log.Info("retrieving OIDC configuration")
+	if err != nil {
+		log.Fatalf("oidc init failed, reason: %v", err)
+		panic(err)
+	}
+	auth.Details = details
+	log.Info("OIDC configuration retrieved")
 }
 
 // main starts the web server
