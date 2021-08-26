@@ -1,6 +1,6 @@
 module github.com/neicnordic/sda-download
 
-go 1.15
+go 1.16
 
 require (
 	github.com/elixir-oslo/crypt4gh v1.3.0
