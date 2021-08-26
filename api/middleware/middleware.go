@@ -57,6 +57,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 // storeDatasets stores the dataset list to the request context
 func storeDatasets(ctx context.Context, datasets []string) context.Context {
 	log.Debugf("storing %v datasets to request context", datasets)
+	// nolint:staticcheck
 	return context.WithValue(ctx, "datasets", datasets)
 }
 
