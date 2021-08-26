@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
-	"github.com/gofiber/fiber/v2"
 	"github.com/neicnordic/sda-download/api/middleware"
+	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/files"
 	log "github.com/sirupsen/logrus"
@@ -121,17 +122,23 @@ func Files(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download serves file contents as bytes
-func Download(c *fiber.Ctx, fileID string, archivePath string) error {
-	log.Debugf("request to /file/%s from %s", fileID, c.Context().RemoteIP().String())
+func Download(w http.ResponseWriter, r *http.Request) {
+
+	// Get file ID from path
+	fileID := strings.Replace(r.URL.Path, "/files/", "", 1)
 
 	// Check user has permissions for this file (as part of a dataset)
 	dataset, err := database.DB.CheckFilePermission(fileID)
 	if err != nil {
 		log.Debugf("requested fileID %s does not exist", fileID)
-		return fiber.NewError(401, "no datasets found with that file ID")
+		http.Error(w, "file not found", 404)
+		return
 	}
+
 	// Get datasets from request context, parsed previously by token middleware
-	datasets := c.Locals("datasets").([]string)
+	datasets := middleware.GetDatasets(r.Context())
+
+	// Verify user has permission to datafile
 	permission := false
 	for d := range datasets {
 		if datasets[d] == dataset || "https://"+datasets[d] == dataset {
@@ -141,49 +148,78 @@ func Download(c *fiber.Ctx, fileID string, archivePath string) error {
 	}
 	if !permission {
 		log.Debugf("user requested to view file %s but does not have permissions for dataset %s", fileID, dataset)
-		return fiber.NewError(401, "no permissions to view this file")
+		http.Error(w, "unauthorised", 401)
+		return
 	}
 
 	// Get file header
 	fileDetails, err := database.DB.GetFile(fileID)
 	if err != nil {
 		log.Errorf("could not retrieve details for file %s, %s", fileID, err)
-		return fiber.NewError(500, "could not retrieve file details")
+		http.Error(w, "database error", 500)
+		return
 	}
 
 	// Get archive file handle
-	path := fmt.Sprintf("%s/%s", archivePath, fileDetails.ArchivePath)
+	path := filepath.Join(config.Config.App.ArchivePath, fileDetails.ArchivePath)
 	file, err := os.Open(path)
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)
-		return fiber.NewError(500, "could not find archive file")
+		http.Error(w, "archive error", 500)
+		return
 	}
 
 	// Get coordinates
-	qStart := c.Query("startCoordinate")
-	qEnd := c.Query("endCoordinate")
+	qStart := r.URL.Query().Get("startCoordinate")
+	qEnd := r.URL.Query().Get("endCoordinate")
 	coordinates := &headers.DataEditListHeaderPacket{}
 	if len(qStart) > 0 && len(qEnd) > 0 {
+		coordError := false
 		start, err := strconv.ParseUint(qStart, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert start coordinate %s to integer, %s", qStart, err)
+			coordError = true
 		}
 		end, err := strconv.ParseUint(qEnd, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert end coordinate %s to integer, %s", qEnd, err)
+			coordError = true
 		}
-		coordinates.NumberLengths = 2
-		coordinates.Lengths = []uint64{start, end}
+		if !coordError {
+			coordinates.NumberLengths = 2
+			coordinates.Lengths = []uint64{start, end}
+		} else {
+			coordinates = nil
+		}
 	} else {
 		coordinates = nil
 	}
 
 	// Get file stream
 	fileStream, err := files.StreamFile(fileDetails.Header, file, coordinates)
+	log.Debugf("HELLO %v", err)
 	if err != nil {
 		log.Errorf("could not prepare file for streaming, %s", err)
-		return fiber.NewError(500, "failed to prepare a file for streaming")
+		http.Error(w, "file stream error", 500)
+		return
 	}
 
-	return c.SendStream(fileStream)
+	sendStream(w, fileStream)
+}
+
+// sendStream streams file contents from a reader
+func sendStream(w http.ResponseWriter, file io.Reader) {
+	log.Debug("begin data stream")
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	n, err := io.Copy(w, file)
+	log.Debug("end data stream")
+
+	if err != nil {
+		log.Errorf("file streaming failed, reason: %v", err)
+		http.Error(w, "file streaming failed", 500)
+		return
+	}
+
+	log.Debugf("Sent %d bytes", n)
 }
