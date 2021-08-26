@@ -1,8 +1,6 @@
 package main
 
 import (
-	"strconv"
-
 	"github.com/neicnordic/sda-download/api"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
@@ -10,7 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
+// init is run before main, it sets up configuration and other required things
+func init() {
+	log.Info("(1/5) Loading configuration")
+
 	// Load configuration
 	conf, err := config.NewConfig()
 	if err != nil {
@@ -33,11 +34,19 @@ func main() {
 		panic(err)
 	}
 	request.Client = client
+}
 
-	// app contains the web app and endpoints
-	app := api.Setup(conf.OIDC.ConfigurationURL, conf.App.ArchivePath)
+// main starts the web server
+func main() {
+	srv := api.Setup()
 
-	// Start server
-	log.Fatal(app.Listen(conf.App.Host + ":" + strconv.Itoa(conf.App.Port)))
-
+	// Start the server
+	log.Info("(5/5) Starting web server")
+	if config.Config.App.TLSCert != "" && config.Config.App.TLSKey != "" {
+		log.Infof("Web server is ready to receive connections at https://%s:%d", config.Config.App.Host, config.Config.App.Port)
+		log.Fatal(srv.ListenAndServeTLS(config.Config.App.TLSCert, config.Config.App.TLSKey))
+	} else {
+		log.Infof("Web server is ready to receive connections at http://%s:%d", config.Config.App.Host, config.Config.App.Port)
+		log.Fatal(srv.ListenAndServe())
+	}
 }

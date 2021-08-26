@@ -1,42 +1,47 @@
 package api
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/neicnordic/sda-download/api/middleware"
-	"github.com/neicnordic/sda-download/api/sda"
+	"crypto/tls"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/neicnordic/sda-download/internal/config"
+	log "github.com/sirupsen/logrus"
 )
 
-// Setup Setup a fiber app with all of its routes
-func Setup(url string, archivePath string) *fiber.App {
-	// Fiber instance
-	app := fiber.New()
-	app.Use(middleware.TokenMiddleware(url))
+// Setup configures the web server and registers the routes
+func Setup() *http.Server {
+	// Set up routing
+	log.Info("(2/5) Registering endpoint handlers")
+	r := http.NewServeMux()
 
-	// SDA endpoints
-	app.Get("/metadata/datasets", func(c *fiber.Ctx) error {
-		return sda.Datasets(c)
-	})
-	app.Get("/metadata/datasets/+/files", func(c *fiber.Ctx) error {
-		return sda.Files(c, c.Params(("+")))
-	})
-	app.Get("/files/:fileId", func(c *fiber.Ctx) error {
-		return sda.Download(c, c.Params(("fileId")), archivePath)
-	})
+	// r.HandleFunc("/metadata/datasets", sda.Datasets)
+	// r.HandleFunc("/metadata/datasets/", sda.Files)
+	// r.HandleFunc("/files/", sda.Download)
 
-	// S3 endpoints
-	// -
+	// Configure TLS settings
+	log.Info("(3/5) Configuring TLS")
+	cfg := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+		},
+	}
 
-	// HTSGET endpoints
-	// -
+	// Configure web server
+	log.Info("(4/5) Configuring server")
+	srv := &http.Server{
+		Addr:              config.Config.App.Host + ":" + fmt.Sprint(config.Config.App.Port),
+		Handler:           r,
+		TLSConfig:         cfg,
+		TLSNextProto:      make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
+		ReadHeaderTimeout: 20 * time.Second,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      20 * time.Second,
+	}
 
-	// DRS endpoints
-	// -
-
-	// 404 Handler
-	app.Use(func(c *fiber.Ctx) error {
-		return c.SendStatus(404) // => 404 "Not Found"
-	})
-
-	// Return the configured app
-	return app
+	return srv
 }
