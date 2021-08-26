@@ -29,7 +29,7 @@ func Datasets(w http.ResponseWriter, r *http.Request) {
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(datasets)
+	_ = json.NewEncoder(w).Encode(datasets)
 }
 
 // getDatasetID extracts dataset id from path
@@ -118,7 +118,7 @@ func Files(w http.ResponseWriter, r *http.Request) {
 	// Return response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(files)
+	_ = json.NewEncoder(w).Encode(files)
 }
 
 // Download serves file contents as bytes
@@ -174,23 +174,20 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	qEnd := r.URL.Query().Get("endCoordinate")
 	coordinates := &headers.DataEditListHeaderPacket{}
 	if len(qStart) > 0 && len(qEnd) > 0 {
-		coordError := false
 		start, err := strconv.ParseUint(qStart, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert start coordinate %s to integer, %s", qStart, err)
-			coordError = true
+			http.Error(w, "startCoordinate must be an integer", 400)
+			return
 		}
 		end, err := strconv.ParseUint(qEnd, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert end coordinate %s to integer, %s", qEnd, err)
-			coordError = true
+			http.Error(w, "endCoordinate must be an integer", 400)
+			return
 		}
-		if !coordError {
-			coordinates.NumberLengths = 2
-			coordinates.Lengths = []uint64{start, end}
-		} else {
-			coordinates = nil
-		}
+		coordinates.NumberLengths = 2
+		coordinates.Lengths = []uint64{start, end}
 	} else {
 		coordinates = nil
 	}
