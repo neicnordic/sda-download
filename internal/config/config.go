@@ -48,6 +48,8 @@ type AppConfig struct {
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
 	Crypt4GHKey *[32]byte
 
+	// Path to POSIX Archive, prepended to database file name
+	// Optional.
 	ArchivePath string
 }
 
