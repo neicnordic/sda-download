@@ -1,32 +1,65 @@
 package main
 
 import (
-	"strconv"
-
 	"github.com/neicnordic/sda-download/api"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/pkg/auth"
+	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
 )
 
-func main() {
+// init is run before main, it sets up configuration and other required things
+func init() {
+	log.Info("(1/5) Loading configuration")
+
+	// Load configuration
 	conf, err := config.NewConfig()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("configuration loading failed, reason: %v", err)
+		panic(err)
 	}
 	config.Config = *conf
+
 	// Connect to database
 	db, err := database.NewDB(conf.DB)
 	if err != nil {
-		log.Errorf("database connection to %s failed, %s", conf.DB.Host, err)
+		log.Fatalf("database connection failed, reason: %v", err)
 		panic(err)
 	}
 	defer db.Close()
 	database.DB = db
-	// app contains the web app and endpoints
-	app := api.Setup(conf.OIDC.ConfigurationURL, conf.App.ArchivePath)
 
-	// Start server
-	log.Fatal(app.Listen(conf.App.Host + ":" + strconv.Itoa(conf.App.Port)))
+	// Initialise HTTP client for making requests
+	client, err := request.InitialiseClient()
+	if err != nil {
+		log.Fatalf("http client init failed, reason: %v", err)
+		panic(err)
+	}
+	request.Client = client
 
+	// Initialise OIDC configuration
+	details, err := auth.GetOIDCDetails(conf.OIDC.ConfigurationURL)
+	log.Info("retrieving OIDC configuration")
+	if err != nil {
+		log.Fatalf("oidc init failed, reason: %v", err)
+		panic(err)
+	}
+	auth.Details = details
+	log.Info("OIDC configuration retrieved")
+}
+
+// main starts the web server
+func main() {
+	srv := api.Setup()
+
+	// Start the server
+	log.Info("(5/5) Starting web server")
+	if config.Config.App.TLSCert != "" && config.Config.App.TLSKey != "" {
+		log.Infof("Web server is ready to receive connections at https://%s:%d", config.Config.App.Host, config.Config.App.Port)
+		log.Fatal(srv.ListenAndServeTLS(config.Config.App.TLSCert, config.Config.App.TLSKey))
+	} else {
+		log.Infof("Web server is ready to receive connections at http://%s:%d", config.Config.App.Host, config.Config.App.Port)
+		log.Fatal(srv.ListenAndServe())
+	}
 }
