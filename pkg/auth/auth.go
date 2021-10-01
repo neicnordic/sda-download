@@ -60,7 +60,7 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 		log.Errorf("cannot get key from set , %s", err)
 	}
 
-	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.UseDefaultKey(true))
+	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.InferAlgorithmFromKey(true))
 	if err != nil {
 
 		verifiedToken, err = jwt.Parse([]byte(token), jwt.WithVerify(jwa.RS256, key))
