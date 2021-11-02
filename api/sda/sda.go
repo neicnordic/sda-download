@@ -186,15 +186,22 @@ func Download(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "endCoordinate must be an integer", 400)
 			return
 		}
+		if end < start {
+			log.Errorf("endCoordinate=%d must be greater than startCoordinate=%d", end, start)
+			http.Error(w, "endCoordinate must be greater than startCoordinate", 400)
+			return
+		}
+		// API query params take a coordinate range to read "start...end"
+		// But Crypt4GHReader takes a start byte and number of bytes to read "start...(end-start)"
+		bytesToRead := end - start
 		coordinates.NumberLengths = 2
-		coordinates.Lengths = []uint64{start, end}
+		coordinates.Lengths = []uint64{start, bytesToRead}
 	} else {
 		coordinates = nil
 	}
 
 	// Get file stream
 	fileStream, err := files.StreamFile(fileDetails.Header, file, coordinates)
-	log.Debugf("HELLO %v", err)
 	if err != nil {
 		log.Errorf("could not prepare file for streaming, %s", err)
 		http.Error(w, "file stream error", 500)
