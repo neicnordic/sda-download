@@ -150,6 +150,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 		"decrypted_file_size, decrypted_file_checksum, decrypted_file_checksum_type, file_status from " +
 		"local_ega_ebi.file a, local_ega_ebi.file_dataset b WHERE dataset_id = $1 AND a.file_id=b.file_id;"
 
+	// nolint:rowserrcheck
 	rows, err := db.Query(query, datasetID)
 	if err != nil {
 		log.Error(err)
