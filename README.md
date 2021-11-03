@@ -1,5 +1,5 @@
 # SDA Download
-`sda-download` is a `go` implementation of the [Data Out API](https://neic-sda.readthedocs.io/en/latest/dataout.html#rest-api-endpoints). The [API Reference](API.md) has example requests and responses.
+`sda-download` is a `go` implementation of the [Data Out API](https://neic-sda.readthedocs.io/en/latest/dataout.html#rest-api-endpoints). The [API Reference](docs/API.md) has example requests and responses.
 
 ## Configuration
 Configuration variables are set in [config.yaml](config.yaml).
