@@ -20,7 +20,6 @@ var Details OIDCDetails
 
 // OIDCDetails is used to draw the response bytes to a struct
 type OIDCDetails struct {
-	Issuer   string `json:"issue"`
 	Userinfo string `json:"userinfo_endpoint"`
 	JWK      string `json:"jwks_uri"`
 }
