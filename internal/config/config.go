@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
 	log "github.com/sirupsen/logrus"
@@ -17,9 +18,10 @@ var Config ConfigMap
 
 // ConfigMap stores all different configs
 type ConfigMap struct {
-	App  AppConfig
-	DB   DatabaseConfig
-	OIDC OIDCConfig
+	App     AppConfig
+	Session SessionConfig
+	DB      DatabaseConfig
+	OIDC    OIDCConfig
 }
 
 type AppConfig struct {
@@ -51,6 +53,13 @@ type AppConfig struct {
 	// Path to POSIX Archive, prepended to database file name
 	// Optional.
 	ArchivePath string
+}
+
+type SessionConfig struct {
+	// Session key expiration time.
+	// Optional. Default value 28800 seconds for 8 hours.
+	// -1 for disabling sessions and requiring visa-checks on every request.
+	Expiration time.Duration
 }
 
 type OIDCConfig struct {
@@ -119,6 +128,7 @@ func NewConfig() (*ConfigMap, error) {
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("app.LogLevel", "info")
 	viper.SetDefault("app.archivePath", "/")
+	viper.SetDefault("session.expiration", 28800*time.Second)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -149,6 +159,7 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	c := &ConfigMap{}
+	c.sessionConfig()
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
 	err := c.appConfig()
 	if err != nil {
@@ -177,6 +188,10 @@ func (c *ConfigMap) appConfig() error {
 		return err
 	}
 	return nil
+}
+
+func (c *ConfigMap) sessionConfig() {
+	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
 }
 
 // configDatabase provides configuration for the database

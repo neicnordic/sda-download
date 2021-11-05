@@ -3,7 +3,10 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"time"
 
+	"github.com/neicnordic/sda-download/internal/config"
+	"github.com/neicnordic/sda-download/internal/session"
 	"github.com/neicnordic/sda-download/pkg/auth"
 	log "github.com/sirupsen/logrus"
 )
@@ -14,35 +17,66 @@ import (
 func TokenMiddleware(nextHandler http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Check that a token is provided
-		token, code, err := auth.GetToken(r.Header.Get("Authorization"))
+
+		// Check if dataset permissions are cached to session
+		sessionCookie, err := r.Cookie("sda_session_key")
 		if err != nil {
-			http.Error(w, err.Error(), code)
-			return
+			log.Debugf("no session cookie received")
+		}
+		var datasets []string
+		var exists bool
+		if sessionCookie != nil {
+			log.Debug("session cookie received")
+			datasets, exists = session.Get(sessionCookie.Value)
 		}
 
-		// Verify token by attempting to retrieve visas from AAI
-		visas, err := auth.GetVisas(auth.Details, token)
-		if err != nil {
-			log.Debug("failed to validate token at AAI")
-			http.Error(w, "bad token", 401)
-			return
-		}
+		if !exists {
+			log.Debug("no session found, create new session")
 
-		// Get permissions
-		datasets, err := auth.GetPermissions(*visas)
-		if err != nil {
-			log.Errorf("failed to parse dataset permission visas, %s", err)
-			http.Error(w, "visa parsing failed", 500)
-			return
-		}
-		if len(datasets) == 0 {
-			log.Debug("token carries no dataset permissions matching the database")
-			http.Error(w, "no datasets found", 404)
-			return
-		}
+			// Check that a token is provided
+			token, code, err := auth.GetToken(r.Header.Get("Authorization"))
+			if err != nil {
+				http.Error(w, err.Error(), code)
+				return
+			}
 
-		log.Debug("authorization check passed")
+			// Verify token by attempting to retrieve visas from AAI
+			visas, err := auth.GetVisas(auth.Details, token)
+			if err != nil {
+				log.Debug("failed to validate token at AAI")
+				http.Error(w, "bad token", 401)
+				return
+			}
+
+			// Get permissions
+			datasets, err = auth.GetPermissions(*visas)
+			if err != nil {
+				log.Errorf("failed to parse dataset permission visas, %s", err)
+				http.Error(w, "visa parsing failed", 500)
+				return
+			}
+			if len(datasets) == 0 {
+				log.Debug("token carries no dataset permissions matching the database")
+				http.Error(w, "no datasets found", 404)
+				return
+			}
+
+			// Start a new session and store datasets under the session key
+			key, err := session.NewSessionKey()
+			if err != nil {
+				log.Errorf("session creation failed, reason: %v", err)
+				http.Error(w, "session init failed", 500)
+				return
+			}
+			session.Set(key, datasets)
+			sessionCookie := &http.Cookie{
+				Name:    "sda_session_key",
+				Value:   key,
+				Expires: time.Now().Add(config.Config.Session.Expiration * time.Second),
+			}
+			http.SetCookie(w, sessionCookie)
+			log.Debug("authorization check passed")
+		}
 
 		// Store dataset list to request context, for use in the endpoint handlers
 		modifiedContext := storeDatasets(r.Context(), datasets)

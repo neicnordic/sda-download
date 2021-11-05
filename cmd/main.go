@@ -4,6 +4,7 @@ import (
 	"github.com/neicnordic/sda-download/api"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/internal/session"
 	"github.com/neicnordic/sda-download/pkg/auth"
 	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
@@ -47,6 +48,13 @@ func init() {
 	}
 	auth.Details = details
 	log.Info("OIDC configuration retrieved")
+
+	// Initialise session cache
+	sessionCache, err := session.InitialiseSessionCache()
+	if err != nil {
+		log.Fatalf("session cache init failed, reason: %v", err)
+	}
+	session.SessionCache = sessionCache
 }
 
 // main starts the web server
