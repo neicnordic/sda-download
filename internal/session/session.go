@@ -68,7 +68,7 @@ func Set(key string, datasets []string) {
 
 // NewSessionKey generates a session key used for storing
 // dataset permissions, and checks that it doesn't already exist
-func NewSessionKey() (string, error) {
+func NewSessionKey() string {
 	log.Debug("generating new session key")
 
 	// Generate a new key until one is generated, which doesn't already exist
@@ -85,5 +85,5 @@ func NewSessionKey() (string, error) {
 	}
 
 	log.Debug("new session key generated")
-	return sessionKey, nil
+	return sessionKey
 }

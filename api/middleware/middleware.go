@@ -62,12 +62,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			}
 
 			// Start a new session and store datasets under the session key
-			key, err := session.NewSessionKey()
-			if err != nil {
-				log.Errorf("session creation failed, reason: %v", err)
-				http.Error(w, "session init failed", 500)
-				return
-			}
+			key := session.NewSessionKey()
 			session.Set(key, datasets)
 			sessionCookie := &http.Cookie{
 				Name:    "sda_session_key",
