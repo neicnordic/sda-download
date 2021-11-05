@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"time"
 
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/session"
@@ -65,9 +64,12 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			key := session.NewSessionKey()
 			session.Set(key, datasets)
 			sessionCookie := &http.Cookie{
-				Name:    "sda_session_key",
-				Value:   key,
-				Expires: time.Now().Add(config.Config.Session.Expiration * time.Second),
+				Name:     "sda_session_key",
+				Value:    key,
+				Domain:   config.Config.Session.Domain,
+				Secure:   true,
+				HttpOnly: true,
+				MaxAge:   int(config.Config.Session.Expiration.Seconds()),
 			}
 			http.SetCookie(w, sessionCookie)
 			log.Debug("authorization check passed")

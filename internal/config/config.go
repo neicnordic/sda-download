@@ -60,6 +60,10 @@ type SessionConfig struct {
 	// Optional. Default value 28800 seconds for 8 hours.
 	// -1 for disabling sessions and requiring visa-checks on every request.
 	Expiration time.Duration
+
+	// Cookie domain, this should be the hostname of the server.
+	// Optional. Default value empty.
+	Domain string
 }
 
 type OIDCConfig struct {
@@ -192,6 +196,7 @@ func (c *ConfigMap) appConfig() error {
 
 func (c *ConfigMap) sessionConfig() {
 	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
+	c.Session.Domain = viper.GetString("session.domain")
 }
 
 // configDatabase provides configuration for the database
