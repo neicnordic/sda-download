@@ -69,7 +69,8 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 				Domain:   config.Config.Session.Domain,
 				Secure:   true,
 				HttpOnly: true,
-				MaxAge:   int(config.Config.Session.Expiration.Seconds()),
+				// time.Duration is stored in nanoseconds, but MaxAge wants seconds
+				MaxAge: int(config.Config.Session.Expiration) / 1e9,
 			}
 			http.SetCookie(w, sessionCookie)
 			log.Debug("authorization check passed")

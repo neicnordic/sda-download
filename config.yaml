@@ -8,10 +8,11 @@ app:
 
 session:
   # session key expiration time in seconds
-  # default 28800 = 8 hours
-  # -1 = sessions are disabled and auth is required on every request
+  # default value = -1 for disabled state
+  # a positive integer enables sessions
+  # a negative integer disables sessions
   expiration: 28800
-  # domain name must be set to the FQDN hostname of the service
+  # domain name must be set to the hostname (FQDN) of the service
   domain: "localhost"
 
 c4gh:

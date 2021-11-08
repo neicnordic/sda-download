@@ -56,9 +56,10 @@ type AppConfig struct {
 }
 
 type SessionConfig struct {
-	// Session key expiration time.
-	// Optional. Default value 28800 seconds for 8 hours.
-	// -1 for disabling sessions and requiring visa-checks on every request.
+	// Session key expiration time in seconds.
+	// Optional. Default value -1
+	// Negative values disable the session and requires visa auth to be done on every request.
+	// Positive values indicate amount of seconds the session stays active, e.g. 3600 for one hour.
 	Expiration time.Duration
 
 	// Cookie domain, this should be the hostname of the server.
@@ -132,7 +133,7 @@ func NewConfig() (*ConfigMap, error) {
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("app.LogLevel", "info")
 	viper.SetDefault("app.archivePath", "/")
-	viper.SetDefault("session.expiration", 28800*time.Second)
+	viper.SetDefault("session.expiration", -1)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
