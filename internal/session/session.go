@@ -41,9 +41,8 @@ func InitialiseSessionCache() (*ristretto.Cache, error) {
 }
 
 // Get returns a value from cache at key
-// DON'T USE DEBUG LOGS IN PRODUCTION, AS SESSION KEY WILL BE LOGGED
 func Get(key string) ([]string, bool) {
-	log.Debugf("get value from cache at key=%s", key)
+	log.Debug("get value from cache")
 	header, exists := SessionCache.Get(key)
 	var cachedDatasets []string
 	if header != nil {
@@ -51,19 +50,17 @@ func Get(key string) ([]string, bool) {
 	} else {
 		cachedDatasets = nil
 	}
-	log.Debugf("cached at key=%s, exists=%t, datasets=%s", key, exists, cachedDatasets)
+	log.Debugf("cache response, exists=%t, datasets=%s", exists, cachedDatasets)
 	return cachedDatasets, exists
 }
 
-// Set stores data to cache at key
-// DON'T USE DEBUG LOGS IN PRODUCTION, AS SESSION KEY WILL BE LOGGED
 func Set(key string, datasets []string) {
-	log.Debugf("store to cache at key=%s", key)
+	log.Debug("store to cache")
 	datasetCache := DatasetCache{
 		Datasets: datasets,
 	}
 	SessionCache.SetWithTTL(key, datasetCache, 1, config.Config.Session.Expiration)
-	log.Debugf("stored to cached at key=%s", key)
+	log.Debug("stored to cache")
 }
 
 // NewSessionKey generates a session key used for storing
