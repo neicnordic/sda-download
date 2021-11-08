@@ -65,6 +65,14 @@ type SessionConfig struct {
 	// Cookie domain, this should be the hostname of the server.
 	// Optional. Default value empty.
 	Domain string
+
+	// Cookie secure value. If true, cookie can only travel in HTTPS.
+	// Optional. Default value true
+	Secure bool
+
+	// Cookie HTTPOnly value. If true, cookie can't be read by JavaScript.
+	// Optional. Default value true
+	HTTPOnly bool
 }
 
 type OIDCConfig struct {
@@ -134,6 +142,8 @@ func NewConfig() (*ConfigMap, error) {
 	viper.SetDefault("app.LogLevel", "info")
 	viper.SetDefault("app.archivePath", "/")
 	viper.SetDefault("session.expiration", -1)
+	viper.SetDefault("session.secure", true)
+	viper.SetDefault("session.httponly", true)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -198,6 +208,8 @@ func (c *ConfigMap) appConfig() error {
 func (c *ConfigMap) sessionConfig() {
 	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
 	c.Session.Domain = viper.GetString("session.domain")
+	c.Session.Secure = viper.GetBool("session.secure")
+	c.Session.HTTPOnly = viper.GetBool("session.httponly")
 }
 
 // configDatabase provides configuration for the database

@@ -15,3 +15,9 @@
 ### Go Patch ###
 /vendor/
 /Godeps/
+
+### Exclude test files ###
+test/*.pem
+test/*.crt
+test/*.csr
+test/*.key
