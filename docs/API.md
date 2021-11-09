@@ -3,6 +3,8 @@ All endpoints require an `Authorization` header with an access token in the `Bea
 ```
 Authorization: Bearer <token>
 ```
+### Authenticated Session
+The client can establish a session to skip time-costly visa validations for further requests. Session is based on the `sda_session_key` cookie returned by the server, which should be returned in later requests.
 ## Datasets
 The `/metadata/datasets` endpoint is used to display the list of datasets the given token is authorised to access, that are present in the archive.
 ### Request

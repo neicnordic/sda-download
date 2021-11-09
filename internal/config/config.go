@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
 	log "github.com/sirupsen/logrus"
@@ -17,9 +18,10 @@ var Config ConfigMap
 
 // ConfigMap stores all different configs
 type ConfigMap struct {
-	App  AppConfig
-	DB   DatabaseConfig
-	OIDC OIDCConfig
+	App     AppConfig
+	Session SessionConfig
+	DB      DatabaseConfig
+	OIDC    OIDCConfig
 }
 
 type AppConfig struct {
@@ -51,6 +53,26 @@ type AppConfig struct {
 	// Path to POSIX Archive, prepended to database file name
 	// Optional.
 	ArchivePath string
+}
+
+type SessionConfig struct {
+	// Session key expiration time in seconds.
+	// Optional. Default value -1
+	// Negative values disable the session and requires visa auth to be done on every request.
+	// Positive values indicate amount of seconds the session stays active, e.g. 3600 for one hour.
+	Expiration time.Duration
+
+	// Cookie domain, this should be the hostname of the server.
+	// Optional. Default value empty.
+	Domain string
+
+	// Cookie secure value. If true, cookie can only travel in HTTPS.
+	// Optional. Default value true
+	Secure bool
+
+	// Cookie HTTPOnly value. If true, cookie can't be read by JavaScript.
+	// Optional. Default value true
+	HTTPOnly bool
 }
 
 type OIDCConfig struct {
@@ -119,6 +141,9 @@ func NewConfig() (*ConfigMap, error) {
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("app.LogLevel", "info")
 	viper.SetDefault("app.archivePath", "/")
+	viper.SetDefault("session.expiration", -1)
+	viper.SetDefault("session.secure", true)
+	viper.SetDefault("session.httponly", true)
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -149,6 +174,7 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	c := &ConfigMap{}
+	c.sessionConfig()
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
 	err := c.appConfig()
 	if err != nil {
@@ -177,6 +203,13 @@ func (c *ConfigMap) appConfig() error {
 		return err
 	}
 	return nil
+}
+
+func (c *ConfigMap) sessionConfig() {
+	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
+	c.Session.Domain = viper.GetString("session.domain")
+	c.Session.Secure = viper.GetBool("session.secure")
+	c.Session.HTTPOnly = viper.GetBool("session.httponly")
 }
 
 // configDatabase provides configuration for the database
