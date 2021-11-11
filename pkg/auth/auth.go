@@ -73,7 +73,7 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 }
 
 // GetToken parses the token string from header
-func GetToken(header string) (string, int, error) {
+var GetToken = func(header string) (string, int, error) {
 	log.Debug("parsing access token from header")
 	if len(header) == 0 {
 		log.Debug("authorization check failed")
@@ -115,7 +115,7 @@ type Visa struct {
 }
 
 // GetVisas requests the list of visas from userinfo endpoint
-func GetVisas(o OIDCDetails, token string) (*Visas, error) {
+var GetVisas = func(o OIDCDetails, token string) (*Visas, error) {
 	log.Debugf("requesting visas from %s", o.Userinfo)
 	// Set headers
 	headers := map[string]string{}
@@ -138,7 +138,7 @@ func GetVisas(o OIDCDetails, token string) (*Visas, error) {
 }
 
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
-func GetPermissions(visas Visas) ([]string, error) {
+var GetPermissions = func(visas Visas) []string {
 	log.Debug("parsing permissions from visas")
 	var datasets []string
 
@@ -208,33 +208,30 @@ func GetPermissions(visas Visas) ([]string, error) {
 			log.Errorf("failed to parse visa claim JSON into struct, %s, %s", err, visaClaimJSON)
 			continue
 		}
-		datasetFull := visa.Dataset
-		datasetParts := strings.Split(datasetFull, "://")
-		datasetName := datasetParts[len(datasetParts)-1]
-		exists, err := database.DB.CheckDataset(datasetFull)
+		exists, err := database.DB.CheckDataset(visa.Dataset)
 		if err != nil {
-			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", datasetName)
+			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", visa.Dataset)
 			continue
 		}
 		if exists {
-			log.Debugf("checking dataset list for duplicates of %s", datasetName)
+			log.Debugf("checking dataset list for duplicates of %s", visa.Dataset)
 			// check that dataset name doesn't already exist in return list,
 			// we can get duplicates when using multiple AAIs
 			duplicate := false
 			for i := range datasets {
-				if datasets[i] == datasetName {
+				if datasets[i] == visa.Dataset {
 					duplicate = true
-					log.Debugf("found a duplicate: dataset %s is already found, skip", datasetName)
+					log.Debugf("found a duplicate: dataset %s is already found, skip", visa.Dataset)
 					continue
 				}
 			}
 			if !duplicate {
-				log.Debugf("no duplicates of dataset: %s, add dataset to list of permissions", datasetName)
-				datasets = append(datasets, datasetName)
+				log.Debugf("no duplicates of dataset: %s, add dataset to list of permissions", visa.Dataset)
+				datasets = append(datasets, visa.Dataset)
 			}
 		}
 	}
 
 	log.Debugf("matched datasets, %s", datasets)
-	return datasets, nil
+	return datasets
 }
