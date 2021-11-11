@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -33,31 +34,24 @@ func Datasets(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(datasets)
 }
 
+var FilesHandler *regexp.Regexp
+
 // getDatasetID extracts dataset id from path
 func getDatasetID(url string) (string, error) {
 	var (
-		datasetParts []string
-		dataset      string
+		dataset string
 	)
 
-	// Get path elements
-	path := strings.Split(url, "/")
-
 	// Check that the correct /metadata/dataset/{dataset}/files endpoint was accessed
-	if path[len(path)-1] == "files" {
-		// Extract dataset name parts from the path
-		datasetParts = path[3 : len(path)-1]
-		// Discard http-scheme if it was given
-		if dp := datasetParts[0]; dp == "http:" || dp == "https:" {
-			datasetParts = datasetParts[1:]
-		}
-	} else {
-		log.Debugf("dataset %v not found", datasetParts)
-		return "", errors.New("dataset not found")
-	}
+	// and extract the dataset name from the path
+	urlMatched := FilesHandler.FindStringSubmatch(url)
 
-	// Join dataset parts back to dataset name
-	dataset = strings.Join(datasetParts, "/")
+	if len(urlMatched) == 2 {
+		dataset = urlMatched[1]
+	} else {
+		// /metadata/datasets/{dataset} is not a configured endpoint
+		return "", errors.New("not found")
+	}
 
 	return dataset, nil
 }
@@ -90,10 +84,7 @@ func getFiles(datasetID string, ctx context.Context) ([]*database.FileInfo, int,
 			return nil, 500, errors.New("database error")
 		}
 
-		fileshttp, _ := database.DB.GetFiles("https://" + datasetID)
-		result := append(files, fileshttp...)
-
-		return result, 200, nil
+		return files, 200, nil
 	}
 
 	return nil, 404, errors.New("dataset not found")
