@@ -16,13 +16,6 @@ import (
 // DB is exported for other packages
 var DB *SQLdb
 
-// Database defines methods to be implemented by SQLdb
-type Database interface {
-	GetHeader(fileID string) ([]byte, error)
-	GetFile(fileID string) ([]*FileInfo, error)
-	Close()
-}
-
 // SQLdb struct that acts as a receiver for the DB update methods
 type SQLdb struct {
 	DB       *sql.DB
