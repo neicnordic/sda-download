@@ -13,6 +13,8 @@ import (
 	"github.com/neicnordic/sda-download/pkg/auth"
 )
 
+const token string = "token"
+
 // testEndpoint mimics the endpoint handlers that perform business logic after passing the
 // authentication middleware. This handler is generic and can be used for all cases.
 func testEndpoint(w http.ResponseWriter, r *http.Request) {}
@@ -37,6 +39,7 @@ func TestTokenMiddleware_Fail_GetToken(t *testing.T) {
 
 	// Test the outcomes of the handler
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 401
 	expectedBody := []byte("access token must be provided\n")
@@ -64,7 +67,7 @@ func TestTokenMiddleware_Fail_GetVisas(t *testing.T) {
 
 	// Substitute mock functions
 	auth.GetToken = func(header string) (string, int, error) {
-		return "token", 200, nil
+		return token, 200, nil
 	}
 	auth.GetVisas = func(o auth.OIDCDetails, token string) (*auth.Visas, error) {
 		return nil, errors.New("bad token")
@@ -80,6 +83,7 @@ func TestTokenMiddleware_Fail_GetVisas(t *testing.T) {
 
 	// Test the outcomes of the handler
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 401
 	expectedBody := []byte("bad token\n")
@@ -109,7 +113,7 @@ func TestTokenMiddleware_Fail_GetPermissions(t *testing.T) {
 
 	// Substitute mock functions
 	auth.GetToken = func(header string) (string, int, error) {
-		return "token", 200, nil
+		return token, 200, nil
 	}
 	auth.GetVisas = func(o auth.OIDCDetails, token string) (*auth.Visas, error) {
 		return &auth.Visas{}, nil
@@ -128,6 +132,7 @@ func TestTokenMiddleware_Fail_GetPermissions(t *testing.T) {
 
 	// Test the outcomes of the handler
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 404
 	expectedBody := []byte("no datasets found\n")
@@ -159,7 +164,7 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 
 	// Substitute mock functions
 	auth.GetToken = func(header string) (string, int, error) {
-		return "token", 200, nil
+		return token, 200, nil
 	}
 	auth.GetVisas = func(o auth.OIDCDetails, token string) (*auth.Visas, error) {
 		return &auth.Visas{}, nil
@@ -191,12 +196,14 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 
 	// Test the outcomes of the handler
 	response := w.Result()
+	defer response.Body.Close()
 	expectedStatusCode := 200
 	expectedSessionKey := "key"
 
 	if response.StatusCode != expectedStatusCode {
 		t.Errorf("TestTokenMiddleware_Success_NoCache failed, got %d expected %d", response.StatusCode, expectedStatusCode)
 	}
+	// nolint:bodyclose
 	for _, c := range w.Result().Cookies() {
 		if c.Name == "sda_session_key" {
 			if c.Value != expectedSessionKey {
@@ -247,11 +254,13 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 
 	// Test the outcomes of the handler
 	response := w.Result()
+	defer response.Body.Close()
 	expectedStatusCode := 200
 
 	if response.StatusCode != expectedStatusCode {
 		t.Errorf("TestTokenMiddleware_Success_FromCache failed, got %d expected %d", response.StatusCode, expectedStatusCode)
 	}
+	// nolint:bodyclose
 	for _, c := range w.Result().Cookies() {
 		if c.Name == "sda_session_key" {
 			t.Errorf("TestTokenMiddleware_Success_FromCache failed, got a session cookie, when should not have")
