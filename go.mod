@@ -6,6 +6,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/elixir-oslo/crypt4gh v1.3.0
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/mux v1.8.0
 	github.com/lestrrat-go/jwx v1.2.9
 	github.com/lib/pq v1.10.4
 	github.com/sirupsen/logrus v1.8.1

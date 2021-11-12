@@ -5,7 +5,6 @@ import (
 	"context"
 	"io"
 	"net/http/httptest"
-	"regexp"
 	"testing"
 
 	"github.com/neicnordic/sda-download/api/middleware"
@@ -44,39 +43,6 @@ func TestDatasets(t *testing.T) {
 
 	// Return mock functions to originals
 	middleware.GetDatasets = originalGetDatasets
-
-}
-
-func TestGetDatasetID_Fail(t *testing.T) {
-	r := regexp.MustCompile("(?:/metadata/datasets/)(.*)(?:/files)")
-	FilesHandler = r
-	address := "/metadata/datasets/https://doi.org/abc/123"
-
-	_, err := getDatasetID(address)
-
-	expectedError := "not found" // 404
-
-	if err.Error() != expectedError {
-		t.Errorf("TestGetDatasetID_Fail failed, got %v expected %v", err, expectedError)
-	}
-
-}
-
-func TestGetDatasetID_Success(t *testing.T) {
-	r := regexp.MustCompile("(?:/metadata/datasets/)(.*)(?:/files)")
-	FilesHandler = r
-	address := "/metadata/datasets/https://doi.org/abc/123/files"
-
-	dataset, err := getDatasetID(address)
-
-	expectedDataset := "https://doi.org/abc/123"
-
-	if dataset != expectedDataset {
-		t.Errorf("TestGetDatasetID_Success_WithScheme failed, got %s expected %s", dataset, expectedDataset)
-	}
-	if err != nil {
-		t.Errorf("TestGetDatasetID_Success_WithScheme failed, got err=%v expected err=nil", err)
-	}
 
 }
 

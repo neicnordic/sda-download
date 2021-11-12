@@ -42,7 +42,7 @@ var dbRetryTimes = 3
 var dbReconnectTimeout = 5 * time.Minute
 
 // dbReconnectSleep is how long to wait between attempts to connect to the database
-var dbReconnectSleep = 5 * time.Second
+var dbReconnectSleep = 1 * time.Second
 
 // sqlOpen is an internal variable to ease testing
 var sqlOpen = sql.Open

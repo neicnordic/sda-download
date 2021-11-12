@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/api/sda"
 	"github.com/neicnordic/sda-download/internal/config"
@@ -16,10 +17,10 @@ import (
 func Setup() *http.Server {
 	// Set up routing
 	log.Info("(2/5) Registering endpoint handlers")
-	r := http.NewServeMux()
+	r := mux.NewRouter().SkipClean(true)
 
 	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets)))
-	r.Handle("/metadata/datasets/", middleware.TokenMiddleware(http.HandlerFunc(sda.Files)))
+	r.Handle("/metadata/datasets/{dataset:[A-Za-z0-9-_.~:/?#@!$&'()*+,;=]+}/files", middleware.TokenMiddleware(http.HandlerFunc(sda.Files)))
 	r.Handle("/files/", middleware.TokenMiddleware(http.HandlerFunc(sda.Download)))
 
 	// Configure TLS settings

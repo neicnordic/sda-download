@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
+	"github.com/gorilla/mux"
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
@@ -34,33 +34,11 @@ func Datasets(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(datasets)
 }
 
-var FilesHandler *regexp.Regexp
-
-// getDatasetID extracts dataset id from path
-func getDatasetID(url string) (string, error) {
-	var (
-		dataset string
-	)
-
-	// Check that the correct /metadata/dataset/{dataset}/files endpoint was accessed
-	// and extract the dataset name from the path
-	urlMatched := FilesHandler.FindStringSubmatch(url)
-
-	if len(urlMatched) == 2 {
-		dataset = urlMatched[1]
-	} else {
-		// /metadata/datasets/{dataset} is not a configured endpoint
-		return "", errors.New("not found")
-	}
-
-	return dataset, nil
-}
-
 // find looks for a dataset name in a list of datasets
 func find(datasetID string, datasets []string) bool {
 	found := false
-	for i := range datasets {
-		if datasetID == datasets[i] {
+	for _, dataset := range datasets {
+		if datasetID == dataset {
 			found = true
 			break
 		}
@@ -93,16 +71,10 @@ func getFiles(datasetID string, ctx context.Context) ([]*database.FileInfo, int,
 // Files serves a list of files belonging to a dataset
 func Files(w http.ResponseWriter, r *http.Request) {
 	log.Infof("request to %s", r.URL.Path)
-
-	// Get dataset ID from path
-	datasetID, err := getDatasetID(r.URL.Path)
-	if err != nil {
-		http.Error(w, err.Error(), 404)
-		return
-	}
+	vars := mux.Vars(r)
 
 	// Get dataset files
-	files, code, err := getFiles(datasetID, r.Context())
+	files, code, err := getFiles(vars["dataset"], r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), code)
 		return

@@ -1,10 +1,7 @@
 package main
 
 import (
-	"regexp"
-
 	"github.com/neicnordic/sda-download/api"
-	"github.com/neicnordic/sda-download/api/sda"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/session"
@@ -16,10 +13,6 @@ import (
 // init is run before main, it sets up configuration and other required things
 func init() {
 	log.Info("(1/5) Loading configuration")
-
-	// Compile regex matcher for metadata endpoint
-	r := regexp.MustCompile("(?:/metadata/datasets/)(.*)(?:/files)")
-	sda.FilesHandler = r
 
 	// Load configuration
 	conf, err := config.NewConfig()
