@@ -34,6 +34,7 @@ func TestDatasets(t *testing.T) {
 	// Test the outcomes of the handler
 	Datasets(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 200
 	expectedBody := []byte(`["dataset1","dataset2"]` + "\n")
@@ -214,6 +215,7 @@ func TestFiles_Fail(t *testing.T) {
 	// Test the outcomes of the handler
 	Files(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 404
 	expectedBody := []byte("dataset not found\n")
@@ -263,6 +265,7 @@ func TestFiles_Success(t *testing.T) {
 	// Test the outcomes of the handler
 	Files(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 200
 	expectedBody := []byte(
@@ -344,9 +347,11 @@ func TestParseCoordinates_Fail_SizeComparison(t *testing.T) {
 	if err != nil {
 		t.Errorf("TestParseCoordinates_Fail_SizeComparison failed, got %v expected nil", err)
 	}
+	// nolint:staticcheck
 	if coordinates == nil {
 		t.Error("TestParseCoordinates_Fail_SizeComparison failed, got nil expected not nil")
 	}
+	// nolint:staticcheck
 	if coordinates.NumberLengths != expectedLength {
 		t.Errorf("TestParseCoordinates_Fail_SizeComparison failed, got %d expected %d", coordinates.Lengths, expectedLength)
 	}
@@ -397,6 +402,7 @@ func TestDownload_Fail_FileNotFound(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 404
 	expectedBody := []byte("file not found\n")
@@ -424,6 +430,7 @@ func TestDownload_Fail_NoPermissions(t *testing.T) {
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
+		// nolint:goconst
 		return "dataset1", nil
 	}
 	middleware.GetDatasets = func(ctx context.Context) []string {
@@ -437,6 +444,7 @@ func TestDownload_Fail_NoPermissions(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 401
 	expectedBody := []byte("unauthorised\n")
@@ -482,6 +490,7 @@ func TestDownload_Fail_GetFile(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 500
 	expectedBody := []byte("database error\n")
@@ -533,6 +542,7 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 500
 	expectedBody := []byte("archive error\n")
@@ -588,6 +598,7 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 400
 	expectedBody := []byte("bad params\n")
@@ -648,6 +659,7 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 500
 	expectedBody := []byte("file stream error\n")
@@ -714,6 +726,7 @@ func TestDownload_Success(t *testing.T) {
 	// Test the outcomes of the handler
 	Download(w, r)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 200
 	expectedBody := []byte("hello\n")
@@ -750,6 +763,7 @@ func TestSendStream(t *testing.T) {
 	// Send file to streamer
 	sendStream(w, fileReader)
 	response := w.Result()
+	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedContentLen := "5"
 	expectedBody := []byte("hello\n")
