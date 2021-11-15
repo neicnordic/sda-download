@@ -114,7 +114,7 @@ func (dbs *SQLdb) checkAndReconnectIfNeeded() {
 }
 
 // GetFiles retrieves the file details
-func (dbs *SQLdb) GetFiles(datasetID string) ([]*FileInfo, error) {
+var GetFiles = func(datasetID string) ([]*FileInfo, error) {
 	var (
 		r     []*FileInfo = nil
 		err   error       = nil
@@ -122,7 +122,7 @@ func (dbs *SQLdb) GetFiles(datasetID string) ([]*FileInfo, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.getFiles(datasetID)
+		r, err = DB.getFiles(datasetID)
 		if err != nil {
 			count++
 			continue
@@ -178,7 +178,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 }
 
 // CheckDataset checks if dataset name exists
-func (dbs *SQLdb) CheckDataset(dataset string) (bool, error) {
+var CheckDataset = func(dataset string) (bool, error) {
 	var (
 		r     bool  = false
 		err   error = nil
@@ -186,7 +186,7 @@ func (dbs *SQLdb) CheckDataset(dataset string) (bool, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.checkDataset(dataset)
+		r, err = DB.checkDataset(dataset)
 		if err != nil {
 			count++
 			continue
@@ -212,7 +212,7 @@ func (dbs *SQLdb) checkDataset(dataset string) (bool, error) {
 }
 
 // CheckFilePermission checks if user has permissions to access the dataset the file is a part of
-func (dbs *SQLdb) CheckFilePermission(fileID string) (string, error) {
+var CheckFilePermission = func(fileID string) (string, error) {
 	var (
 		r     string = ""
 		err   error  = nil
@@ -220,7 +220,7 @@ func (dbs *SQLdb) CheckFilePermission(fileID string) (string, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.checkFilePermission(fileID)
+		r, err = DB.checkFilePermission(fileID)
 		if err != nil {
 			count++
 			continue
@@ -253,14 +253,14 @@ type FileDownload struct {
 }
 
 // GetFile retrieves the file header
-func (dbs *SQLdb) GetFile(fileID string) (*FileDownload, error) {
+var GetFile = func(fileID string) (*FileDownload, error) {
 	var (
 		r     *FileDownload = nil
 		err   error         = nil
 		count int           = 0
 	)
 	for count < dbRetryTimes {
-		r, err = dbs.getFile(fileID)
+		r, err = DB.getFile(fileID)
 		if err != nil {
 			count++
 			continue
