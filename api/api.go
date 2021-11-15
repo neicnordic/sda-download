@@ -21,7 +21,7 @@ func Setup() *http.Server {
 
 	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets)))
 	r.Handle("/metadata/datasets/{dataset:[A-Za-z0-9-_.~:/?#@!$&'()*+,;=]+}/files", middleware.TokenMiddleware(http.HandlerFunc(sda.Files)))
-	r.Handle("/files/", middleware.TokenMiddleware(http.HandlerFunc(sda.Download)))
+	r.Handle("/files/{fileid}", middleware.TokenMiddleware(http.HandlerFunc(sda.Download)))
 
 	// Configure TLS settings
 	log.Info("(3/5) Configuring TLS")
