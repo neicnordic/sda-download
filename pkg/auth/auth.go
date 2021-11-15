@@ -208,7 +208,7 @@ var GetPermissions = func(visas Visas) []string {
 			log.Errorf("failed to parse visa claim JSON into struct, %s, %s", err, visaClaimJSON)
 			continue
 		}
-		exists, err := database.DB.CheckDataset(visa.Dataset)
+		exists, err := database.CheckDataset(visa.Dataset)
 		if err != nil {
 			log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", visa.Dataset)
 			continue

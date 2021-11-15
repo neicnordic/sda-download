@@ -12,7 +12,7 @@ import (
 )
 
 // StreamFile returns a stream of file contents
-func StreamFile(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+var StreamFile = func(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
 	log.Debugf("preparing file %s for streaming", file.Name())
 	// Stitch header and file body together
 	hr := bytes.NewReader(header)
