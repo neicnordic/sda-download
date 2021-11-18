@@ -37,7 +37,7 @@ func TestGetSetCache_Found(t *testing.T) {
 	SessionCache = cache
 
 	Set("key1", []string{"dataset1", "dataset2"})
-	time.Sleep(1) // need to give cache time to get ready
+	time.Sleep(time.Duration(100 * time.Millisecond)) // need to give cache time to get ready
 	datasets, exists := Get("key1")
 
 	// Expected results
@@ -63,7 +63,7 @@ func TestGetSetCache_NotFound(t *testing.T) {
 	SessionCache = cache
 
 	Set("key1", []string{"dataset1", "dataset2"})
-	time.Sleep(1) // need to give cache time to get ready
+	time.Sleep(time.Duration(100 * time.Millisecond)) // need to give cache time to get ready
 	datasets, exists := Get("key2")
 
 	// Expected results

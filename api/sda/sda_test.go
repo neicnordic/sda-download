@@ -793,7 +793,7 @@ func TestStitchFile_Fail(t *testing.T) {
 	defer os.Remove(testFile.Name())
 	defer testFile.Close()
 	const data = "hello, here is some test data\n"
-	io.WriteString(testFile, data)
+	_, _ = io.WriteString(testFile, data)
 
 	// Test
 	fileStream, err := stitchFile(header, testFile, nil)
