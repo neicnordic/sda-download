@@ -1,6 +1,7 @@
 package sda
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,11 +12,11 @@ import (
 	"strconv"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
+	"github.com/elixir-oslo/crypt4gh/streaming"
 	"github.com/gorilla/mux"
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
-	"github.com/neicnordic/sda-download/internal/files"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -143,8 +144,8 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get file stream
-	fileStream, err := files.StreamFile(fileDetails.Header, file, coordinates)
+	// Stitch file and prepare it for streaming
+	fileStream, err := stitchFile(fileDetails.Header, file, coordinates)
 	if err != nil {
 		log.Errorf("could not prepare file for streaming, %s", err)
 		http.Error(w, "file stream error", 500)
@@ -152,6 +153,22 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendStream(w, fileStream)
+}
+
+// stitchFile stitches the header and file body together for Crypt4GHReader
+// and returns a streamable Reader
+var stitchFile = func(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	log.Debugf("stitching header to file %s for streaming", file.Name())
+	// Stitch header and file body together
+	hr := bytes.NewReader(header)
+	mr := io.MultiReader(hr, file)
+	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
+	if err != nil {
+		log.Errorf("failed to create Crypt4GH stream reader, %v", err)
+		return nil, err
+	}
+	log.Debugf("file stream for %s constructed", file.Name())
+	return c4ghr, nil
 }
 
 // parseCoordinates takes query param coordinates and converts them to
