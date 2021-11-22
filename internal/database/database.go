@@ -163,12 +163,15 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 			return nil, err
 		}
 
-		// local_ega_ebi.file:file_size is actually the size of the archive file without header
-		// so we need to increase the encrypted file size by the length of the header if the user
-		// downloaded the files in encrypted format. I set it as 124 which seems to be the default
-		// length, but if files can have greater headers, then we can calculate the length with
-		// fd := GetFile() --> len(fd.Header)
-		fi.FileSize = fi.FileSize + 124
+		// NOTE FOR ENCRYPTED DOWNLOAD
+		// As of now, encrypted download is not supported. When implementing encrypted download, note that
+		// local_ega_ebi.file:file_size is the size of the file body in the archive without the header,
+		// so the user needs to know the size of the header when downloading in encrypted format.
+		// A way to get this could be:
+		// fd := GetFile()
+		// fi.FileSize = fi.FileSize + len(fd.Header)
+		// But if the header is re-encrypted or a completely new header is generated, the length
+		// needs to be conveyd to the user in some other way.
 
 		// Add structs to array
 		files = append(files, fi)
