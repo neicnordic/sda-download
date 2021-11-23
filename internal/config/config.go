@@ -139,7 +139,7 @@ func NewConfig() (*ConfigMap, error) {
 	// defaults
 	viper.SetDefault("app.host", "localhost")
 	viper.SetDefault("app.port", 8080)
-	viper.SetDefault("app.LogLevel", "info")
+	viper.SetDefault("app.logLevel", "info")
 	viper.SetDefault("app.archivePath", "/")
 	viper.SetDefault("session.expiration", -1)
 	viper.SetDefault("session.secure", true)
@@ -163,7 +163,7 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	if viper.IsSet("app.LogLevel") {
-		stringLevel := viper.GetString("app.LogLevel")
+		stringLevel := viper.GetString("app.logLevel")
 		intLevel, err := log.ParseLevel(stringLevel)
 		if err != nil {
 			log.Printf("Log level '%s' not supported, setting to 'trace'", stringLevel)
@@ -196,6 +196,7 @@ func (c *ConfigMap) appConfig() error {
 	c.App.TLSCert = viper.GetString("app.tlscert")
 	c.App.TLSKey = viper.GetString("app.tlskey")
 	c.App.ArchivePath = viper.GetString("app.archivePath")
+	c.App.LogLevel = viper.GetString("app.logLevel")
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()
@@ -205,6 +206,7 @@ func (c *ConfigMap) appConfig() error {
 	return nil
 }
 
+// sessionConfig controls cookie settings and session cache
 func (c *ConfigMap) sessionConfig() {
 	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
 	c.Session.Domain = viper.GetString("session.domain")
@@ -254,7 +256,7 @@ func (c *ConfigMap) configDatabase() error {
 }
 
 // GetC4GHKey reads and decrypts and returns the c4gh key
-func GetC4GHKey() (*[32]byte, error) {
+var GetC4GHKey = func() (*[32]byte, error) {
 	log.Info("reading crypt4gh private key")
 	keyPath := viper.GetString("c4gh.filepath")
 	passphrase := viper.GetString("c4gh.passphrase")
