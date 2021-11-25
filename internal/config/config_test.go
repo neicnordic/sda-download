@@ -155,7 +155,9 @@ func generateKeyForTest(suite *TestSuite) {
 	assert.NoError(suite.T(), err)
 	tempDir := suite.T().TempDir()
 	privateKeyFile, err := os.Create(fmt.Sprintf("%s/c4fg.key", tempDir))
+	assert.NoError(suite.T(), err)
 	err = keys.WriteCrypt4GHX25519PrivateKey(privateKeyFile, privateKey, []byte("password"))
+	assert.NoError(suite.T(), err)
 	viper.Set("c4gh.filepath", fmt.Sprintf("%s/c4fg.key", tempDir))
 	viper.Set("c4gh.passphrase", "password")
 }
