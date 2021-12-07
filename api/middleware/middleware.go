@@ -48,12 +48,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			}
 
 			// Get permissions
-			datasets, err = auth.GetPermissions(*visas)
-			if err != nil {
-				log.Errorf("failed to parse dataset permission visas, %s", err)
-				http.Error(w, "visa parsing failed", 500)
-				return
-			}
+			datasets = auth.GetPermissions(*visas)
 			if len(datasets) == 0 {
 				log.Debug("token carries no dataset permissions matching the database")
 				http.Error(w, "no datasets found", 404)
@@ -94,7 +89,7 @@ func storeDatasets(ctx context.Context, datasets []string) context.Context {
 }
 
 // GetDatasets extracts the dataset list from the request context
-func GetDatasets(ctx context.Context) []string {
+var GetDatasets = func(ctx context.Context) []string {
 	datasets := ctx.Value("datasets")
 	if datasets == nil {
 		log.Debug("request datasets context is empty")

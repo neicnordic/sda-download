@@ -16,13 +16,6 @@ import (
 // DB is exported for other packages
 var DB *SQLdb
 
-// Database defines methods to be implemented by SQLdb
-type Database interface {
-	GetHeader(fileID string) ([]byte, error)
-	GetFile(fileID string) ([]*FileInfo, error)
-	Close()
-}
-
 // SQLdb struct that acts as a receiver for the DB update methods
 type SQLdb struct {
 	DB       *sql.DB
@@ -49,7 +42,7 @@ var dbRetryTimes = 3
 var dbReconnectTimeout = 5 * time.Minute
 
 // dbReconnectSleep is how long to wait between attempts to connect to the database
-var dbReconnectSleep = 5 * time.Second
+var dbReconnectSleep = 1 * time.Second
 
 // sqlOpen is an internal variable to ease testing
 var sqlOpen = sql.Open
@@ -121,7 +114,7 @@ func (dbs *SQLdb) checkAndReconnectIfNeeded() {
 }
 
 // GetFiles retrieves the file details
-func (dbs *SQLdb) GetFiles(datasetID string) ([]*FileInfo, error) {
+var GetFiles = func(datasetID string) ([]*FileInfo, error) {
 	var (
 		r     []*FileInfo = nil
 		err   error       = nil
@@ -129,7 +122,7 @@ func (dbs *SQLdb) GetFiles(datasetID string) ([]*FileInfo, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.getFiles(datasetID)
+		r, err = DB.getFiles(datasetID)
 		if err != nil {
 			count++
 			continue
@@ -170,12 +163,15 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 			return nil, err
 		}
 
-		// local_ega_ebi.file:file_size is actually the size of the archive file without header
-		// so we need to increase the encrypted file size by the length of the header if the user
-		// downloaded the files in encrypted format. I set it as 124 which seems to be the default
-		// length, but if files can have greater headers, then we can calculate the length with
-		// fd := GetFile() --> len(fd.Header)
-		fi.FileSize = fi.FileSize + 124
+		// NOTE FOR ENCRYPTED DOWNLOAD
+		// As of now, encrypted download is not supported. When implementing encrypted download, note that
+		// local_ega_ebi.file:file_size is the size of the file body in the archive without the header,
+		// so the user needs to know the size of the header when downloading in encrypted format.
+		// A way to get this could be:
+		// fd := GetFile()
+		// fi.FileSize = fi.FileSize + len(fd.Header)
+		// But if the header is re-encrypted or a completely new header is generated, the length
+		// needs to be conveyd to the user in some other way.
 
 		// Add structs to array
 		files = append(files, fi)
@@ -185,7 +181,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 }
 
 // CheckDataset checks if dataset name exists
-func (dbs *SQLdb) CheckDataset(dataset string) (bool, error) {
+var CheckDataset = func(dataset string) (bool, error) {
 	var (
 		r     bool  = false
 		err   error = nil
@@ -193,7 +189,7 @@ func (dbs *SQLdb) CheckDataset(dataset string) (bool, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.checkDataset(dataset)
+		r, err = DB.checkDataset(dataset)
 		if err != nil {
 			count++
 			continue
@@ -219,7 +215,7 @@ func (dbs *SQLdb) checkDataset(dataset string) (bool, error) {
 }
 
 // CheckFilePermission checks if user has permissions to access the dataset the file is a part of
-func (dbs *SQLdb) CheckFilePermission(fileID string) (string, error) {
+var CheckFilePermission = func(fileID string) (string, error) {
 	var (
 		r     string = ""
 		err   error  = nil
@@ -227,7 +223,7 @@ func (dbs *SQLdb) CheckFilePermission(fileID string) (string, error) {
 	)
 
 	for count < dbRetryTimes {
-		r, err = dbs.checkFilePermission(fileID)
+		r, err = DB.checkFilePermission(fileID)
 		if err != nil {
 			count++
 			continue
@@ -260,14 +256,14 @@ type FileDownload struct {
 }
 
 // GetFile retrieves the file header
-func (dbs *SQLdb) GetFile(fileID string) (*FileDownload, error) {
+var GetFile = func(fileID string) (*FileDownload, error) {
 	var (
 		r     *FileDownload = nil
 		err   error         = nil
 		count int           = 0
 	)
 	for count < dbRetryTimes {
-		r, err = dbs.getFile(fileID)
+		r, err = DB.getFile(fileID)
 		if err != nil {
 			count++
 			continue

@@ -1,0 +1,163 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/elixir-oslo/crypt4gh/keys"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+)
+
+var requiredConfVars = []string{
+	"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
+}
+
+type TestSuite struct {
+	suite.Suite
+}
+
+func (suite *TestSuite) SetupTest() {
+	viper.Set("db.host", "test")
+	viper.Set("db.user", "test")
+	viper.Set("db.password", "test")
+	viper.Set("db.database", "test")
+	viper.Set("c4gh.filepath", "test")
+	viper.Set("c4gh.passphrase", "test")
+	viper.Set("oidc.ConfigurationURL", "test")
+}
+
+func (suite *TestSuite) TearDownTest() {
+	viper.Reset()
+}
+
+func TestConfigTestSuite(t *testing.T) {
+	suite.Run(t, new(TestSuite))
+}
+
+func (suite *TestSuite) TestConfigFile() {
+	viper.Set("configFile", "test")
+	config, err := NewConfig()
+	assert.Nil(suite.T(), config)
+	assert.Error(suite.T(), err)
+	assert.Equal(suite.T(), "test", viper.ConfigFileUsed())
+}
+
+func (suite *TestSuite) TestMissingRequiredConfVar() {
+	for _, requiredConfVar := range requiredConfVars {
+		requiredConfVarValue := viper.Get(requiredConfVar)
+		viper.Set(requiredConfVar, nil)
+		expectedError := fmt.Errorf("%s not set", requiredConfVar)
+		config, err := NewConfig()
+		assert.Nil(suite.T(), config)
+		if assert.Error(suite.T(), err) {
+			assert.Equal(suite.T(), expectedError, err)
+		}
+		viper.Set(requiredConfVar, requiredConfVarValue)
+	}
+}
+
+func (suite *TestSuite) TestAppConfig() {
+
+	// Test fail on key read error
+	viper.Set("app.host", "test")
+	viper.Set("app.port", 1234)
+	viper.Set("app.tlscert", "test")
+	viper.Set("app.tlskey", "test")
+	viper.Set("app.archivePath", "/test")
+	viper.Set("app.logLevel", "debug")
+
+	viper.Set("db.sslmode", "disable")
+
+	c := &ConfigMap{}
+	err := c.appConfig()
+	assert.Error(suite.T(), err, "Error expected")
+	assert.Nil(suite.T(), c.App.Crypt4GHKey)
+
+	// Generate a Crypt4GH private key, so that ConfigMap.appConfig() doesn't fail
+	generateKeyForTest(suite)
+
+	c = &ConfigMap{}
+	err = c.appConfig()
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test", c.App.Host)
+	assert.Equal(suite.T(), 1234, c.App.Port)
+	assert.Equal(suite.T(), "test", c.App.TLSCert)
+	assert.Equal(suite.T(), "test", c.App.TLSKey)
+	assert.Equal(suite.T(), "/test", c.App.ArchivePath)
+	assert.Equal(suite.T(), "debug", c.App.LogLevel)
+
+}
+
+func (suite *TestSuite) TestSessionConfig() {
+
+	viper.Set("session.expiration", 3600)
+	viper.Set("session.domain", "test")
+	viper.Set("session.secure", false)
+	viper.Set("session.httponly", false)
+
+	viper.Set("db.sslmode", "disable")
+
+	c := &ConfigMap{}
+	c.sessionConfig()
+	assert.Equal(suite.T(), time.Duration(3600*time.Second), c.Session.Expiration)
+	assert.Equal(suite.T(), "test", c.Session.Domain)
+	assert.Equal(suite.T(), false, c.Session.Secure)
+	assert.Equal(suite.T(), false, c.Session.HTTPOnly)
+
+}
+
+func (suite *TestSuite) TestDatabaseConfig() {
+
+	// Test error on missing SSL vars
+	viper.Set("db.sslmode", "verify-full")
+	c := &ConfigMap{}
+	err := c.configDatabase()
+	assert.Error(suite.T(), err, "Error expected")
+
+	// Test no error on SSL disabled
+	viper.Set("db.sslmode", "disable")
+	c = &ConfigMap{}
+	err = c.configDatabase()
+	assert.NoError(suite.T(), err)
+
+	// Test pass on SSL vars set
+	viper.Set("db.host", "test")
+	viper.Set("db.port", 1234)
+	viper.Set("db.user", "test")
+	viper.Set("db.password", "test")
+	viper.Set("db.database", "test")
+	viper.Set("db.cacert", "test")
+	viper.Set("db.clientcert", "test")
+	viper.Set("db.clientkey", "test")
+	viper.Set("db.sslmode", "verify-full")
+
+	c = &ConfigMap{}
+	err = c.configDatabase()
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test", c.DB.Host)
+	assert.Equal(suite.T(), 1234, c.DB.Port)
+	assert.Equal(suite.T(), "test", c.DB.User)
+	assert.Equal(suite.T(), "test", c.DB.Password)
+	assert.Equal(suite.T(), "test", c.DB.Database)
+	assert.Equal(suite.T(), "test", c.DB.CACert)
+	assert.Equal(suite.T(), "test", c.DB.ClientCert)
+	assert.Equal(suite.T(), "test", c.DB.ClientKey)
+
+}
+
+func generateKeyForTest(suite *TestSuite) {
+	// Generate a key, so that ConfigMap.appConfig() doesn't fail
+	_, privateKey, err := keys.GenerateKeyPair()
+	assert.NoError(suite.T(), err)
+	tempDir := suite.T().TempDir()
+	privateKeyFile, err := os.Create(fmt.Sprintf("%s/c4fg.key", tempDir))
+	assert.NoError(suite.T(), err)
+	err = keys.WriteCrypt4GHX25519PrivateKey(privateKeyFile, privateKey, []byte("password"))
+	assert.NoError(suite.T(), err)
+	viper.Set("c4gh.filepath", fmt.Sprintf("%s/c4fg.key", tempDir))
+	viper.Set("c4gh.passphrase", "password")
+}

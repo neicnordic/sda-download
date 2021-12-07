@@ -41,7 +41,7 @@ func InitialiseSessionCache() (*ristretto.Cache, error) {
 }
 
 // Get returns a value from cache at key
-func Get(key string) ([]string, bool) {
+var Get = func(key string) ([]string, bool) {
 	log.Debug("get value from cache")
 	header, exists := SessionCache.Get(key)
 	var cachedDatasets []string
@@ -65,7 +65,7 @@ func Set(key string, datasets []string) {
 
 // NewSessionKey generates a session key used for storing
 // dataset permissions, and checks that it doesn't already exist
-func NewSessionKey() string {
+var NewSessionKey = func() string {
 	log.Debug("generating new session key")
 
 	// Generate a new key until one is generated, which doesn't already exist
