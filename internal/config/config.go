@@ -33,11 +33,6 @@ type AppConfig struct {
 	// Optional. Default value 8080
 	Port int
 
-	// Logging level
-	// Optional. Default value debug
-	// Possible values error, fatal, info, panic, warn, trace, debug
-	LogLevel string
-
 	// TLS server certificate for HTTPS
 	// Optional. Defaults to empty
 	TLSCert string
@@ -162,8 +157,8 @@ func NewConfig() (*ConfigMap, error) {
 		}
 	}
 
-	if viper.IsSet("app.LogLevel") {
-		stringLevel := viper.GetString("app.logLevel")
+	if viper.IsSet("log.level") {
+		stringLevel := viper.GetString("log.level")
 		intLevel, err := log.ParseLevel(stringLevel)
 		if err != nil {
 			log.Printf("Log level '%s' not supported, setting to 'trace'", stringLevel)
@@ -196,7 +191,6 @@ func (c *ConfigMap) appConfig() error {
 	c.App.TLSCert = viper.GetString("app.tlscert")
 	c.App.TLSKey = viper.GetString("app.tlskey")
 	c.App.ArchivePath = viper.GetString("app.archivePath")
-	c.App.LogLevel = viper.GetString("app.logLevel")
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()

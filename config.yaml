@@ -3,8 +3,10 @@ app:
   port: 8080
   tlscert: "test/tls.crt"
   tlskey: "test/tls.key"
-  logLevel: "debug"
   archivePath: "/"
+
+log:
+  level: "debug"
 
 session:
   # session key expiration time in seconds

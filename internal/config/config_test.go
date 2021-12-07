@@ -88,7 +88,6 @@ func (suite *TestSuite) TestAppConfig() {
 	assert.Equal(suite.T(), "test", c.App.TLSCert)
 	assert.Equal(suite.T(), "test", c.App.TLSKey)
 	assert.Equal(suite.T(), "/test", c.App.ArchivePath)
-	assert.Equal(suite.T(), "debug", c.App.LogLevel)
 
 }
 
