@@ -131,15 +131,6 @@ func NewConfig() (*ConfigMap, error) {
 		viper.SetConfigFile(viper.GetString("configFile"))
 	}
 
-	// defaults
-	viper.SetDefault("app.host", "localhost")
-	viper.SetDefault("app.port", 8080)
-	viper.SetDefault("app.logLevel", "info")
-	viper.SetDefault("app.archivePath", "/")
-	viper.SetDefault("session.expiration", -1)
-	viper.SetDefault("session.secure", true)
-	viper.SetDefault("session.httponly", true)
-
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Infoln("No config file found, using ENVs only")
@@ -169,6 +160,7 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	c := &ConfigMap{}
+	c.applyDefaults()
 	c.sessionConfig()
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
 	err := c.appConfig()
@@ -182,6 +174,16 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	return c, nil
+}
+
+// applyDefaults set default values for web server and session
+func (c *ConfigMap) applyDefaults() {
+	viper.SetDefault("app.host", "localhost")
+	viper.SetDefault("app.port", 8080)
+	viper.SetDefault("app.archivePath", "/")
+	viper.SetDefault("session.expiration", -1)
+	viper.SetDefault("session.secure", true)
+	viper.SetDefault("session.httponly", true)
 }
 
 // appConfig sets required settings
