@@ -13,6 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+const POSIX = "posix"
+const S3 = "s3"
+
 // Config is a global configuration value store
 var Config ConfigMap
 
@@ -22,6 +25,7 @@ type ConfigMap struct {
 	Session SessionConfig
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
+	Archive ArchiveConfig
 }
 
 type AppConfig struct {
@@ -44,10 +48,17 @@ type AppConfig struct {
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
 	Crypt4GHKey *[32]byte
+}
 
-	// Path to POSIX Archive, prepended to database file name
-	// Optional.
-	ArchivePath string
+// string to POSIX Archive, prepended to database file name
+// S3 not supported at the moment
+type ArchiveConfig struct {
+	Type  string
+	Posix posixConf
+}
+
+type posixConf struct {
+	Location string
 }
 
 type SessionConfig struct {
@@ -142,6 +153,12 @@ func NewConfig() (*ConfigMap, error) {
 		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
 	}
 
+	if viper.GetString("archive.type") == S3 {
+		return nil, fmt.Errorf("currently only POSIX archive supported")
+	} else if viper.GetString("archive.type") == POSIX {
+		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
+	}
+
 	for _, s := range requiredConfVars {
 		if !viper.IsSet(s) || viper.GetString(s) == "" {
 			return nil, fmt.Errorf("%s not set", s)
@@ -162,6 +179,7 @@ func NewConfig() (*ConfigMap, error) {
 	c := &ConfigMap{}
 	c.applyDefaults()
 	c.sessionConfig()
+	c.configArchive()
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
 	err := c.appConfig()
 	if err != nil {
@@ -180,10 +198,20 @@ func NewConfig() (*ConfigMap, error) {
 func (c *ConfigMap) applyDefaults() {
 	viper.SetDefault("app.host", "localhost")
 	viper.SetDefault("app.port", 8080)
-	viper.SetDefault("app.archivePath", "/")
 	viper.SetDefault("session.expiration", -1)
 	viper.SetDefault("session.secure", true)
 	viper.SetDefault("session.httponly", true)
+}
+
+// configArchive provides configuration for the archive storage
+// we default to POSIX unless S3 specified
+func (c *ConfigMap) configArchive() {
+	if viper.GetString("archive.type") == S3 {
+		// do nothing
+	} else {
+		c.Archive.Type = POSIX
+		c.Archive.Posix.Location = viper.GetString("archive.location")
+	}
 }
 
 // appConfig sets required settings
@@ -192,7 +220,6 @@ func (c *ConfigMap) appConfig() error {
 	c.App.Port = viper.GetInt("app.port")
 	c.App.TLSCert = viper.GetString("app.tlscert")
 	c.App.TLSKey = viper.GetString("app.tlskey")
-	c.App.ArchivePath = viper.GetString("app.archivePath")
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()

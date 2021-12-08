@@ -67,8 +67,7 @@ func (suite *TestSuite) TestAppConfig() {
 	viper.Set("app.port", 1234)
 	viper.Set("app.tlscert", "test")
 	viper.Set("app.tlskey", "test")
-	viper.Set("app.archivePath", "/test")
-	viper.Set("app.logLevel", "debug")
+	viper.Set("log.logLevel", "debug")
 
 	viper.Set("db.sslmode", "disable")
 
@@ -87,7 +86,15 @@ func (suite *TestSuite) TestAppConfig() {
 	assert.Equal(suite.T(), 1234, c.App.Port)
 	assert.Equal(suite.T(), "test", c.App.TLSCert)
 	assert.Equal(suite.T(), "test", c.App.TLSKey)
-	assert.Equal(suite.T(), "/test", c.App.ArchivePath)
+}
+
+func (suite *TestSuite) TestArchiveConfig() {
+	viper.Set("archive.type", POSIX)
+	viper.Set("archive.location", "/test")
+
+	c := &ConfigMap{}
+	c.configArchive()
+	assert.Equal(suite.T(), "/test", c.Archive.Posix.Location)
 
 }
 
