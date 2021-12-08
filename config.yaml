@@ -3,10 +3,14 @@ app:
   port: 8080
   tlscert: "test/tls.crt"
   tlskey: "test/tls.key"
-  archivePath: "/"
 
 log:
   level: "debug"
+
+# posix is only supported at the moment
+archive:
+  type: "posix"
+  location: "/"
 
 session:
   # session key expiration time in seconds
@@ -25,8 +29,8 @@ session:
 
 c4gh:
   # crypt4gh private key for decrypting archived files
-  filepath: "test/doa.sec.pem"
-  passphrase: "doa"
+  filepath: "test/download.sec.pem"
+  passphrase: "passphrase"
 
 db:
   host: "localhost"

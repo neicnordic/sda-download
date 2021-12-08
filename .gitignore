@@ -21,3 +21,5 @@ test/*.pem
 test/*.crt
 test/*.csr
 test/*.key
+
+test/crypt4gh
