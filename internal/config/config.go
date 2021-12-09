@@ -150,7 +150,7 @@ func NewConfig() (*ConfigMap, error) {
 		}
 	}
 	requiredConfVars := []string{
-		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
+		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
 	}
 
 	if viper.GetString("archive.type") == S3 {
@@ -180,7 +180,7 @@ func NewConfig() (*ConfigMap, error) {
 	c.applyDefaults()
 	c.sessionConfig()
 	c.configArchive()
-	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
+	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
 	err := c.appConfig()
 	if err != nil {
 		return nil, err

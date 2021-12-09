@@ -44,4 +44,5 @@ db:
 
 oidc:
   # oidc configuration API must have values for "userinfo_endpoint" and "jwks_uri"
-  ConfigurationURL: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"
+  configuration:
+    url: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"
