@@ -25,9 +25,9 @@ func Setup() *http.Server {
 	log.Info("(2/5) Registering endpoint handlers")
 	r := mux.NewRouter().SkipClean(true)
 
-	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets)))
-	r.Handle("/metadata/datasets/{dataset:[A-Za-z0-9-_.~:/?#@!$&'()*+,;=]+}/files", middleware.TokenMiddleware(http.HandlerFunc(sda.Files)))
-	r.Handle("/files/{fileid}", middleware.TokenMiddleware(http.HandlerFunc(sda.Download)))
+	r.Handle("/metadata/datasets", middleware.TokenMiddleware(http.HandlerFunc(sda.Datasets))).Methods("GET")
+	r.Handle("/metadata/datasets/{dataset:[A-Za-z0-9-_.~:/?#@!$&'()*+,;=]+}/files", middleware.TokenMiddleware(http.HandlerFunc(sda.Files))).Methods("GET")
+	r.Handle("/files/{fileid}", middleware.TokenMiddleware(http.HandlerFunc(sda.Download))).Methods("GET")
 	r.HandleFunc("/health", healthResponse).Methods("GET")
 
 	// Configure TLS settings
