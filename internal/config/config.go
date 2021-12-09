@@ -195,8 +195,9 @@ func NewConfig() (*ConfigMap, error) {
 }
 
 // applyDefaults set default values for web server and session
+// default to host 0.0.0.0 as it will the main way we deploy this application
 func (c *ConfigMap) applyDefaults() {
-	viper.SetDefault("app.host", "localhost")
+	viper.SetDefault("app.host", "0.0.0.0")
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("session.expiration", -1)
 	viper.SetDefault("session.secure", true)
