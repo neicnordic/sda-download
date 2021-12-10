@@ -2,9 +2,11 @@ package main
 
 import (
 	"github.com/neicnordic/sda-download/api"
+	"github.com/neicnordic/sda-download/api/sda"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/session"
+	"github.com/neicnordic/sda-download/internal/storage"
 	"github.com/neicnordic/sda-download/pkg/auth"
 	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
@@ -55,6 +57,12 @@ func init() {
 		log.Fatalf("session cache init failed, reason: %v", err)
 	}
 	session.SessionCache = sessionCache
+
+	backend, err := storage.NewBackend(conf.Archive)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sda.Backend = backend
 }
 
 // main starts the web server
