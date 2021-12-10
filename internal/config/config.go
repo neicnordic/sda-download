@@ -202,6 +202,7 @@ func (c *ConfigMap) applyDefaults() {
 	viper.SetDefault("session.expiration", -1)
 	viper.SetDefault("session.secure", true)
 	viper.SetDefault("session.httponly", true)
+	viper.SetDefault("log.level", "info")
 }
 
 // configArchive provides configuration for the archive storage
