@@ -60,7 +60,7 @@ func init() {
 
 	backend, err := storage.NewBackend(conf.Archive)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error initiating storage backend, reason: %v", err)
 	}
 	sda.Backend = backend
 }
