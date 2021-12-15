@@ -28,3 +28,8 @@ jobs:
                  bash -x "$runscript";
               done'
 
+      - name: Run tests
+        run: 'ls -1 .github/integration/tests/{common,${{ matrix.storagetype }}}/*.sh 2>/dev/null | sort -t/ -k5 -n | while read -r runscript; do
+                echo "Executing test script $runscript";
+                bash -x "$runscript";
+              done'
