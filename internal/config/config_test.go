@@ -13,7 +13,7 @@ import (
 )
 
 var requiredConfVars = []string{
-	"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
+	"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
 }
 
 type TestSuite struct {
@@ -27,7 +27,7 @@ func (suite *TestSuite) SetupTest() {
 	viper.Set("db.database", "test")
 	viper.Set("c4gh.filepath", "test")
 	viper.Set("c4gh.passphrase", "test")
-	viper.Set("oidc.ConfigurationURL", "test")
+	viper.Set("oidc.configuration.url", "test")
 }
 
 func (suite *TestSuite) TearDownTest() {
@@ -67,8 +67,7 @@ func (suite *TestSuite) TestAppConfig() {
 	viper.Set("app.port", 1234)
 	viper.Set("app.tlscert", "test")
 	viper.Set("app.tlskey", "test")
-	viper.Set("app.archivePath", "/test")
-	viper.Set("app.logLevel", "debug")
+	viper.Set("log.logLevel", "debug")
 
 	viper.Set("db.sslmode", "disable")
 
@@ -87,8 +86,15 @@ func (suite *TestSuite) TestAppConfig() {
 	assert.Equal(suite.T(), 1234, c.App.Port)
 	assert.Equal(suite.T(), "test", c.App.TLSCert)
 	assert.Equal(suite.T(), "test", c.App.TLSKey)
-	assert.Equal(suite.T(), "/test", c.App.ArchivePath)
-	assert.Equal(suite.T(), "debug", c.App.LogLevel)
+}
+
+func (suite *TestSuite) TestArchiveConfig() {
+	viper.Set("archive.type", POSIX)
+	viper.Set("archive.location", "/test")
+
+	c := &ConfigMap{}
+	c.configArchive()
+	assert.Equal(suite.T(), "/test", c.Archive.Posix.Location)
 
 }
 

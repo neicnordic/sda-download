@@ -128,7 +128,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get archive file handle
-	path := filepath.Join(config.Config.App.ArchivePath, fileDetails.ArchivePath)
+	path := filepath.Join(config.Config.Archive.Posix.Location, fileDetails.ArchivePath)
 	file, err := os.Open(path)
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)

@@ -13,6 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+const POSIX = "posix"
+const S3 = "s3"
+
 // Config is a global configuration value store
 var Config ConfigMap
 
@@ -22,6 +25,7 @@ type ConfigMap struct {
 	Session SessionConfig
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
+	Archive ArchiveConfig
 }
 
 type AppConfig struct {
@@ -32,11 +36,6 @@ type AppConfig struct {
 	// Port number for this web app
 	// Optional. Default value 8080
 	Port int
-
-	// Logging level
-	// Optional. Default value debug
-	// Possible values error, fatal, info, panic, warn, trace, debug
-	LogLevel string
 
 	// TLS server certificate for HTTPS
 	// Optional. Defaults to empty
@@ -49,10 +48,17 @@ type AppConfig struct {
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
 	Crypt4GHKey *[32]byte
+}
 
-	// Path to POSIX Archive, prepended to database file name
-	// Optional.
-	ArchivePath string
+// string to POSIX Archive, prepended to database file name
+// S3 not supported at the moment
+type ArchiveConfig struct {
+	Type  string
+	Posix posixConf
+}
+
+type posixConf struct {
+	Location string
 }
 
 type SessionConfig struct {
@@ -136,15 +142,6 @@ func NewConfig() (*ConfigMap, error) {
 		viper.SetConfigFile(viper.GetString("configFile"))
 	}
 
-	// defaults
-	viper.SetDefault("app.host", "localhost")
-	viper.SetDefault("app.port", 8080)
-	viper.SetDefault("app.logLevel", "info")
-	viper.SetDefault("app.archivePath", "/")
-	viper.SetDefault("session.expiration", -1)
-	viper.SetDefault("session.secure", true)
-	viper.SetDefault("session.httponly", true)
-
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Infoln("No config file found, using ENVs only")
@@ -153,7 +150,13 @@ func NewConfig() (*ConfigMap, error) {
 		}
 	}
 	requiredConfVars := []string{
-		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.ConfigurationURL",
+		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
+	}
+
+	if viper.GetString("archive.type") == S3 {
+		return nil, fmt.Errorf("currently only POSIX archive supported")
+	} else if viper.GetString("archive.type") == POSIX {
+		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
 	}
 
 	for _, s := range requiredConfVars {
@@ -162,8 +165,8 @@ func NewConfig() (*ConfigMap, error) {
 		}
 	}
 
-	if viper.IsSet("app.LogLevel") {
-		stringLevel := viper.GetString("app.logLevel")
+	if viper.IsSet("log.level") {
+		stringLevel := viper.GetString("log.level")
 		intLevel, err := log.ParseLevel(stringLevel)
 		if err != nil {
 			log.Printf("Log level '%s' not supported, setting to 'trace'", stringLevel)
@@ -174,8 +177,10 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	c := &ConfigMap{}
+	c.applyDefaults()
 	c.sessionConfig()
-	c.OIDC.ConfigurationURL = viper.GetString("oidc.ConfigurationURL")
+	c.configArchive()
+	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
 	err := c.appConfig()
 	if err != nil {
 		return nil, err
@@ -189,14 +194,34 @@ func NewConfig() (*ConfigMap, error) {
 	return c, nil
 }
 
+// applyDefaults set default values for web server and session
+// default to host 0.0.0.0 as it will the main way we deploy this application
+func (c *ConfigMap) applyDefaults() {
+	viper.SetDefault("app.host", "0.0.0.0")
+	viper.SetDefault("app.port", 8080)
+	viper.SetDefault("session.expiration", -1)
+	viper.SetDefault("session.secure", true)
+	viper.SetDefault("session.httponly", true)
+	viper.SetDefault("log.level", "info")
+}
+
+// configArchive provides configuration for the archive storage
+// we default to POSIX unless S3 specified
+func (c *ConfigMap) configArchive() {
+	if viper.GetString("archive.type") == S3 {
+		// do nothing
+	} else {
+		c.Archive.Type = POSIX
+		c.Archive.Posix.Location = viper.GetString("archive.location")
+	}
+}
+
 // appConfig sets required settings
 func (c *ConfigMap) appConfig() error {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
 	c.App.TLSCert = viper.GetString("app.tlscert")
 	c.App.TLSKey = viper.GetString("app.tlskey")
-	c.App.ArchivePath = viper.GetString("app.archivePath")
-	c.App.LogLevel = viper.GetString("app.logLevel")
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()

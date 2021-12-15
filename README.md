@@ -9,8 +9,16 @@
 ## Configuration
 Configuration variables are set in [config.yaml](config.yaml).
 
+### Local Setup
+
+For local setup run
+```
+cd test && ./setup.sh && cd ..
+```
+
 ## Run
 Requires [sda-db](https://github.com/neicnordic/sda-db) to be running beforehand.
 ```
 go run cmd/main.go
 ```
+
