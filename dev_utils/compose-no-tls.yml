@@ -48,6 +48,7 @@ services:
     depends_on: 
       - db
       - s3
+      - mockauth
     environment:
       - ARCHIVE_URL=http://s3
       - ARCHIVE_TYPE=s3
@@ -60,6 +61,23 @@ services:
     ports:
       - "8080:8080"
     restart: always
+  mockauth:
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --upgrade pip
+        pip install aiohttp cryptography Authlib
+        python -u /mockoidc.py
+    container_name: mockauth
+    image: python:3.8-slim
+    volumes:
+      - ./mockoidc/mockoidc.py:/mockoidc.py
+    mem_limit: 256m
+    ports:
+      - "8000:8000"
+    restart: always
+
 
 volumes:
      archive:

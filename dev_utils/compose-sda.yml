@@ -78,6 +78,7 @@ services:
     depends_on: 
       - certfixer
       - db
+      - mockauth
     env_file: ./env.download
     image: neicnordic/sda-download:latest
     volumes:
@@ -88,6 +89,22 @@ services:
     mem_limit: 256m
     ports:
       - "443:443"
+    restart: always
+  mockauth:
+    command:
+      - /bin/sh
+      - -c
+      - |
+        pip install --upgrade pip
+        pip install aiohttp cryptography Authlib
+        python -u /mockoidc.py
+    container_name: mockauth
+    image: python:3.8-slim
+    volumes:
+      - ./mockoidc/mockoidc.py:/mockoidc.py
+    mem_limit: 256m
+    ports:
+      - "8000:8000"
     restart: always
 
 volumes:
