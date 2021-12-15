@@ -56,7 +56,7 @@ services:
     volumes:
       - ./config-notls.yaml:/config.yaml
       - ./:/dev_utils/
-      - ./archive_data:/tmp
+      - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
     ports:
       - "8080:8080"
     restart: always

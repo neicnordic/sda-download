@@ -84,7 +84,7 @@ services:
       - ./config.yaml:/config.yaml
       - ./:/dev_utils/
       - certs:/dev_utils/certs
-      - ./archive_data/:/tmp
+      - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
     mem_limit: 256m
     ports:
       - "443:443"
