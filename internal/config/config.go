@@ -75,6 +75,7 @@ type OIDCConfig struct {
 	// OIDC OP configuration URL /.well-known/openid-configuration
 	// Mandatory.
 	ConfigurationURL string
+	TrustedISS       string
 }
 
 type DatabaseConfig struct {
@@ -170,7 +171,7 @@ func NewConfig() (*ConfigMap, error) {
 	c.applyDefaults()
 	c.sessionConfig()
 	c.configArchive()
-	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
+	c.configureOIDC()
 	err := c.appConfig()
 	if err != nil {
 		return nil, err
@@ -228,6 +229,13 @@ func configS3Storage(prefix string) storage.S3Conf {
 	}
 
 	return s3
+}
+
+func (c *ConfigMap) configureOIDC() {
+	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
+	if viper.IsSet("oidc.trusted.iss") {
+		c.OIDC.TrustedISS = viper.GetString("oidc.trusted.iss")
+	}
 }
 
 // configArchive provides configuration for the archive storage

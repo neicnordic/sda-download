@@ -213,6 +213,11 @@ func validateVisa(visa string) (jwt.Token, bool) {
 		return nil, false
 	}
 
+	if !ValidateTrustedIss(verifiedVisa.Issuer(), o.JWK) {
+		log.Infof("combination of iss: %s and jku: %s is not trusted", verifiedVisa.Issuer(), o.JWK)
+		return nil, false
+	}
+
 	// Validate visa claims, exp, iat, nbf
 	if err := jwt.Validate(verifiedVisa); err != nil {
 		log.Error("failed to validate visa")
