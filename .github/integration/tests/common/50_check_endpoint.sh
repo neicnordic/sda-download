@@ -6,7 +6,9 @@ if [ "$STORAGETYPE" = s3notls ]; then
     exit 0
 fi
 
+# ------------------
 # Test Health Endpoint
+
 check_health=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:443/health)
 
 if [ "$check_health" != "200" ]; then
@@ -17,6 +19,7 @@ fi
 
 echo "Health endpoint is ok"
 
+# ------------------
 # Test empty token
 
 check_401=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:443/metadata/datasets)
@@ -39,6 +42,7 @@ fi
 
 echo "got correct response when POST method used"
 
+# ------------------
 # Test good token
 
 token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
@@ -86,7 +90,7 @@ else
     echo "Files are different"
 fi
 
-
+# ------------------
 # Test bad token
 
 token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
@@ -102,3 +106,21 @@ if [ "$check_empty_token" != "404" ]; then
 fi
 
 echo "got correct response when token has no permissions"
+
+# ------------------
+# Test token with untrusted sources
+# for this test we attach a list of trusted sources
+
+token=$(curl "http://localhost:8000/tokens" | jq -r  '.[2]')
+
+## Test datasets endpoint
+
+check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET -I --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:443/metadata/datasets)
+
+if [ "$check_empty_token" != "404" ]; then
+    echo "response for token with untrusted sources is not 404"
+    echo "got: ${check_empty_token}"
+    exit 1
+fi
+
+echo "got correct response when token permissions from untrusted sources"

@@ -84,6 +84,7 @@ services:
     volumes:
       - ./config.yaml:/config.yaml
       - ./:/dev_utils/
+      - ./iss.json:/iss.json
       - certs:/dev_utils/certs
       - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
     mem_limit: 256m
