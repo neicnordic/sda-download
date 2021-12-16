@@ -89,7 +89,7 @@ services:
       - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
     mem_limit: 256m
     ports:
-      - "443:443"
+      - "8443:8443"
     restart: always
   mockauth:
     command:

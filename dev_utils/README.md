@@ -1,6 +1,16 @@
 # Local testing howto
 
-## Getting up and running fast
+## Getting started locally
+In root repository
+
+```
+export CONFIGFILE="./dev_utils/config.yaml"
+go run cmd/main.go
+```
+
+This requires having the certificates generated and the database up.
+
+## Getting up and running fast with docker compose
 
 ```command
 docker-compose -f compose-no-tls.yml up -d
@@ -90,4 +100,4 @@ The mockauth service provides tokens that contain already permissions for the da
 
 The [API Reference](../docs/API.md) has example requests and responses.
 
-For quick example run: `curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:443/metadata/datasets`
+For quick example run: `curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:8443/metadata/datasets`
