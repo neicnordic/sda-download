@@ -15,6 +15,7 @@ import (
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/internal/storage"
 )
 
 func TestDatasets(t *testing.T) {
@@ -518,6 +519,7 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 	originalCheckFilePermission := database.CheckFilePermission
 	originalGetDatasets := middleware.GetDatasets
 	originalGetFile := database.GetFile
+	Backend, _ = storage.NewBackend(config.Config.Archive)
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
@@ -571,6 +573,8 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 	originalGetDatasets := middleware.GetDatasets
 	originalGetFile := database.GetFile
 	originalParseCoordinates := parseCoordinates
+	config.Config.Archive.Posix.Location = "."
+	Backend, _ = storage.NewBackend(config.Config.Archive)
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
@@ -629,6 +633,8 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 	originalGetFile := database.GetFile
 	originalParseCoordinates := parseCoordinates
 	originalStitchFile := stitchFile
+	config.Config.Archive.Posix.Location = "."
+	Backend, _ = storage.NewBackend(config.Config.Archive)
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
@@ -648,7 +654,7 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 	parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {
 		return nil, nil
 	}
-	stitchFile = func(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
 		return nil, errors.New("file stream error")
 	}
 
@@ -692,6 +698,8 @@ func TestDownload_Success(t *testing.T) {
 	originalParseCoordinates := parseCoordinates
 	originalStitchFile := stitchFile
 	originalSendStream := sendStream
+	config.Config.Archive.Posix.Location = "."
+	Backend, _ = storage.NewBackend(config.Config.Archive)
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
@@ -711,7 +719,7 @@ func TestDownload_Success(t *testing.T) {
 	parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {
 		return nil, nil
 	}
-	stitchFile = func(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
 		return nil, nil
 	}
 	sendStream = func(w http.ResponseWriter, file io.Reader) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
+	"github.com/neicnordic/sda-download/internal/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -25,7 +26,7 @@ type ConfigMap struct {
 	Session SessionConfig
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
-	Archive ArchiveConfig
+	Archive storage.Conf
 }
 
 type AppConfig struct {
@@ -48,17 +49,6 @@ type AppConfig struct {
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
 	Crypt4GHKey *[32]byte
-}
-
-// string to POSIX Archive, prepended to database file name
-// S3 not supported at the moment
-type ArchiveConfig struct {
-	Type  string
-	Posix posixConf
-}
-
-type posixConf struct {
-	Location string
 }
 
 type SessionConfig struct {
@@ -154,7 +144,7 @@ func NewConfig() (*ConfigMap, error) {
 	}
 
 	if viper.GetString("archive.type") == S3 {
-		return nil, fmt.Errorf("currently only POSIX archive supported")
+		requiredConfVars = append(requiredConfVars, []string{"archive.url", "archive.accesskey", "archive.secretkey", "archive.bucket"}...)
 	} else if viper.GetString("archive.type") == POSIX {
 		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
 	}
@@ -205,11 +195,47 @@ func (c *ConfigMap) applyDefaults() {
 	viper.SetDefault("log.level", "info")
 }
 
+// configS3Storage populates and returns a S3Conf from the
+// configuration
+func configS3Storage(prefix string) storage.S3Conf {
+	s3 := storage.S3Conf{}
+	// All these are required
+	s3.URL = viper.GetString(prefix + ".url")
+	s3.AccessKey = viper.GetString(prefix + ".accesskey")
+	s3.SecretKey = viper.GetString(prefix + ".secretkey")
+	s3.Bucket = viper.GetString(prefix + ".bucket")
+
+	// Defaults (move to viper?)
+
+	s3.Port = 443
+	s3.Region = "us-east-1"
+	s3.NonExistRetryTime = 2 * time.Minute
+
+	if viper.IsSet(prefix + ".port") {
+		s3.Port = viper.GetInt(prefix + ".port")
+	}
+
+	if viper.IsSet(prefix + ".region") {
+		s3.Region = viper.GetString(prefix + ".region")
+	}
+
+	if viper.IsSet(prefix + ".chunksize") {
+		s3.Chunksize = viper.GetInt(prefix+".chunksize") * 1024 * 1024
+	}
+
+	if viper.IsSet(prefix + ".cacert") {
+		s3.Cacert = viper.GetString(prefix + ".cacert")
+	}
+
+	return s3
+}
+
 // configArchive provides configuration for the archive storage
 // we default to POSIX unless S3 specified
 func (c *ConfigMap) configArchive() {
 	if viper.GetString("archive.type") == S3 {
-		// do nothing
+		c.Archive.Type = S3
+		c.Archive.S3 = configS3Storage("archive")
 	} else {
 		c.Archive.Type = POSIX
 		c.Archive.Posix.Location = viper.GetString("archive.location")

@@ -7,8 +7,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
@@ -17,8 +15,11 @@ import (
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/internal/storage"
 	log "github.com/sirupsen/logrus"
 )
+
+var Backend storage.Backend
 
 // Datasets serves a list of permitted datasets
 func Datasets(w http.ResponseWriter, r *http.Request) {
@@ -128,8 +129,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get archive file handle
-	path := filepath.Join(config.Config.Archive.Posix.Location, fileDetails.ArchivePath)
-	file, err := os.Open(path)
+	file, err := Backend.NewFileReader(fileDetails.ArchivePath)
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)
 		http.Error(w, "archive error", 500)
@@ -157,8 +157,8 @@ func Download(w http.ResponseWriter, r *http.Request) {
 
 // stitchFile stitches the header and file body together for Crypt4GHReader
 // and returns a streamable Reader
-var stitchFile = func(header []byte, file *os.File, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
-	log.Debugf("stitching header to file %s for streaming", file.Name())
+var stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	log.Debugf("stitching header to file %s for streaming", file)
 	// Stitch header and file body together
 	hr := bytes.NewReader(header)
 	mr := io.MultiReader(hr, file)
@@ -167,7 +167,7 @@ var stitchFile = func(header []byte, file *os.File, coordinates *headers.DataEdi
 		log.Errorf("failed to create Crypt4GH stream reader, %v", err)
 		return nil, err
 	}
-	log.Debugf("file stream for %s constructed", file.Name())
+	log.Debugf("file stream for %s constructed", file)
 	return c4ghr, nil
 }
 
