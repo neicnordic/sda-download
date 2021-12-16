@@ -196,8 +196,17 @@ func checkVisaType(visa string, visaType string) bool {
 
 func validateVisa(visa string) (jwt.Token, bool) {
 	log.Debug("start visa validation")
+
+	// Extract header from header.payload.signature
+	log.Debug("start visa validation")
 	// Extract header from header.payload.signature
 	header, err := jws.Parse([]byte(visa))
+	if err != nil {
+		log.Errorf("failed to parse visa header, %s", err)
+		return nil, false
+	}
+	// Extract payload from header.payload.signature
+	payload, err := jwt.Parse([]byte(visa))
 	if err != nil {
 		log.Errorf("failed to parse visa header, %s", err)
 		return nil, false
@@ -206,15 +215,16 @@ func validateVisa(visa string) (jwt.Token, bool) {
 	o := OIDCDetails{
 		JWK: header.Signatures()[0].ProtectedHeaders().JWKSetURL(),
 	}
+	// Verify that visa comes from a trusted issuer
+	if !ValidateTrustedIss(payload.Issuer(), o.JWK) {
+		log.Infof("combination of iss: %s and jku: %s is not trusted", payload.Issuer(), o.JWK)
+		return nil, false
+	}
+
 	// Verify visa signature
 	verifiedVisa, err := VerifyJWT(o, visa)
 	if err != nil {
 		log.Errorf("failed to validate visa, %s", err)
-		return nil, false
-	}
-
-	if !ValidateTrustedIss(verifiedVisa.Issuer(), o.JWK) {
-		log.Infof("combination of iss: %s and jku: %s is not trusted", verifiedVisa.Issuer(), o.JWK)
 		return nil, false
 	}
 
