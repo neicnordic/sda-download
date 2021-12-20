@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -189,8 +190,10 @@ var parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket,
 	coordinates := &headers.DataEditListHeaderPacket{}
 
 	// Get query params
-	qStart := r.URL.Query().Get("startCoordinate")
-	qEnd := r.URL.Query().Get("endCoordinate")
+	baseUrl, _ := url.ParseRequestURI(r.URL.String())
+
+	qStart := baseUrl.Query().Get("startCoordinate")
+	qEnd := baseUrl.Query().Get("endCoordinate")
 
 	// Parse and verify coordinates are valid
 	if len(qStart) > 0 && len(qEnd) > 0 {
