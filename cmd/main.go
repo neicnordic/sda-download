@@ -71,9 +71,9 @@ func main() {
 
 	// Start the server
 	log.Info("(5/5) Starting web server")
-	if config.Config.App.TLSCert != "" && config.Config.App.TLSKey != "" {
+	if config.Config.App.ServerCert != "" && config.Config.App.ServerKey != "" {
 		log.Infof("Web server is ready to receive connections at https://%s:%d", config.Config.App.Host, config.Config.App.Port)
-		log.Fatal(srv.ListenAndServeTLS(config.Config.App.TLSCert, config.Config.App.TLSKey))
+		log.Fatal(srv.ListenAndServeTLS(config.Config.App.ServerCert, config.Config.App.ServerKey))
 	} else {
 		log.Infof("Web server is ready to receive connections at http://%s:%d", config.Config.App.Host, config.Config.App.Port)
 		log.Fatal(srv.ListenAndServe())

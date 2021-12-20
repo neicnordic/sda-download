@@ -1,16 +1,22 @@
 app:
-  host: "localhost"
-  port: 8080
-  tlscert: "test/tls.crt"
-  tlskey: "test/tls.key"
+  servercert: "./dev_utils/certs/download.pem"
+  serverkey: "./dev_utils/certs/download-key.pem"
 
 log:
   level: "debug"
 
-# posix is only supported at the moment
 archive:
-  type: "posix"
-  location: "/"
+  type: ""
+  # S3 backend
+  url: "https://localhost"
+  port: 9000
+  accesskey: "access"
+  secretkey: "secretkey"
+  bucket: "archive"
+  chunksize: 32
+  cacert: "./dev_utils/certs/ca.pem"
+  # posix backend
+  location: "/tmp"
 
 session:
   # session key expiration time in seconds
@@ -28,21 +34,21 @@ session:
   httponly: true
 
 c4gh:
-  # crypt4gh private key for decrypting archived files
-  filepath: "test/download.sec.pem"
-  passphrase: "passphrase"
+  passphrase: "oaagCP1YgAZeEyl2eJAkHv9lkcWXWFgm"
+  filepath: "./dev_utils/c4gh.sec.pem"
 
 db:
   host: "localhost"
+  port: 5432
   user: "lega_out"
   password: "lega_out"
   database: "lega"
-  cacert: ""
-  clientCert: ""
-  clientKey: ""
-  sslmode: "require"
+  cacert: "./dev_utils/certs/ca.pem"
+  clientCert: "./dev_utils/certs/client.pem"
+  clientKey: "./dev_utils/certs/client-key.pem"
+  sslmode: "verify-ca"
 
 oidc:
   # oidc configuration API must have values for "userinfo_endpoint" and "jwks_uri"
   configuration:
-    url: "https://login.elixir-czech.org/oidc/.well-known/openid-configuration"
+    url: "http://mockauth:8000/.well-known/openid-configuration"

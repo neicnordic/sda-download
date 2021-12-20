@@ -17,9 +17,9 @@
 /Godeps/
 
 ### Exclude test files ###
-test/*.pem
-test/*.crt
-test/*.csr
-test/*.key
+dev_utils/certs/*.pem
+dev_utils/certs/*.crt
+dev_utils/certs/*.csr
+dev_utils/certs/*.key
 
-test/crypt4gh
+crypt4gh

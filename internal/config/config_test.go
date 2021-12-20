@@ -65,8 +65,8 @@ func (suite *TestSuite) TestAppConfig() {
 	// Test fail on key read error
 	viper.Set("app.host", "test")
 	viper.Set("app.port", 1234)
-	viper.Set("app.tlscert", "test")
-	viper.Set("app.tlskey", "test")
+	viper.Set("app.servercert", "test")
+	viper.Set("app.serverkey", "test")
 	viper.Set("log.logLevel", "debug")
 
 	viper.Set("db.sslmode", "disable")
@@ -84,8 +84,8 @@ func (suite *TestSuite) TestAppConfig() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test", c.App.Host)
 	assert.Equal(suite.T(), 1234, c.App.Port)
-	assert.Equal(suite.T(), "test", c.App.TLSCert)
-	assert.Equal(suite.T(), "test", c.App.TLSKey)
+	assert.Equal(suite.T(), "test", c.App.ServerCert)
+	assert.Equal(suite.T(), "test", c.App.ServerKey)
 }
 
 func (suite *TestSuite) TestArchiveConfig() {

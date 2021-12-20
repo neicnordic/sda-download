@@ -40,11 +40,11 @@ type AppConfig struct {
 
 	// TLS server certificate for HTTPS
 	// Optional. Defaults to empty
-	TLSCert string
+	ServerCert string
 
 	// TLS server certificate key for HTTPS
 	// Optional. Defaults to empty
-	TLSKey string
+	ServerKey string
 
 	// Stores the Crypt4GH private key if the two configs above are set
 	// Unconfigurable. Depends on Crypt4GHKeyFile and Crypt4GHPassFile
@@ -246,8 +246,17 @@ func (c *ConfigMap) configArchive() {
 func (c *ConfigMap) appConfig() error {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
-	c.App.TLSCert = viper.GetString("app.tlscert")
-	c.App.TLSKey = viper.GetString("app.tlskey")
+	c.App.ServerCert = viper.GetString("app.servercert")
+	c.App.ServerKey = viper.GetString("app.serverkey")
+
+	if c.App.Port != 443 && c.App.Port != 8080 {
+		c.App.Port = viper.GetInt("app.port")
+	} else {
+		if c.App.ServerCert != "" && c.App.ServerKey != "" {
+			c.App.Port = 443
+		}
+
+	}
 
 	var err error
 	c.App.Crypt4GHKey, err = GetC4GHKey()
