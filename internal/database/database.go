@@ -237,11 +237,14 @@ var CheckFilePermission = func(fileID string) (string, error) {
 func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 	dbs.checkAndReconnectIfNeeded()
 
+	log.Debugf("check permissions for file with id: %s", fileID)
+
 	db := dbs.DB
 	const query = "SELECT dataset_id FROM local_ega_ebi.file_dataset WHERE file_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, fileID).Scan(&datasetName); err != nil {
+		log.Errorf("requested file with id: %s does not exist", fileID)
 		return "", err
 	}
 
@@ -277,6 +280,8 @@ var GetFile = func(fileID string) (*FileDownload, error) {
 func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	dbs.checkAndReconnectIfNeeded()
 
+	log.Debugf("check details for file with id: %s", fileID)
+
 	db := dbs.DB
 	const query = "SELECT file_path, archive_file_size, header FROM local_ega_ebi.file WHERE file_id = $1"
 
@@ -284,11 +289,13 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	var hexString string
 	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString)
 	if err != nil {
+		log.Errorf("could not retrieve details for file %s, reason %s", fileID, err)
 		return nil, err
 	}
 
 	fd.Header, err = hex.DecodeString(hexString)
 	if err != nil {
+		log.Errorf("could not decode file header for file %s, reason %s", fileID, err)
 		return nil, err
 	}
 
