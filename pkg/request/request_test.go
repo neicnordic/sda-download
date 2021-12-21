@@ -91,7 +91,7 @@ func TestMakeRequest_Fail_StatusCode(t *testing.T) {
 
 	// Substitute mock functions
 	HTTPNewRequest = func(method, requestUrl string, body io.Reader) (*http.Request, error) {
-		u, _ := url.Parse("https://testing.fi")
+		u, _ := url.ParseRequestURI("https://testing.fi")
 		r := &http.Request{
 			Method: "GET",
 			URL:    u,
@@ -138,7 +138,7 @@ func TestMakeRequest_Success(t *testing.T) {
 
 	// Substitute mock functions
 	HTTPNewRequest = func(method, requestUrl string, body io.Reader) (*http.Request, error) {
-		u, _ := url.Parse("https://testing.fi")
+		u, _ := url.ParseRequestURI("https://testing.fi")
 		r := &http.Request{
 			Method: "GET",
 			URL:    u,
