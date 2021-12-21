@@ -47,8 +47,8 @@ token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
 
 check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
 
-if [ "$check_dataset" != "https://doi.example/009/600.45" ]; then
-    echo "dataset https://doi.example/009/600.45 not found"
+if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
     echo "got: ${check_dataset}"
     exit 1
 fi
@@ -57,7 +57,7 @@ echo "expected dataset found"
 
 ## Test datasets/files endpoint 
 
-check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/009/600.45/files" | jq -r '.[0].fileId')
+check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
 
 if [ "$check_files" != "urn:neic:001-002" ]; then
     echo "file with id urn:neic:001-002 not found"
@@ -113,8 +113,8 @@ token=$(curl "http://localhost:8000/tokens" | jq -r  '.[2]')
 
 check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
 
-if [ "$check_dataset" != "https://doi.example/009/600.45" ]; then
-    echo "dataset https://doi.example/009/600.45 not found"
+if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
     echo "got: ${check_dataset}"
     exit 1
 fi

@@ -67,7 +67,7 @@ def generate_token() -> Tuple:
       "sub": "requester@demo.org",
       "ga4gh_visa_v1": {
             "type": "ControlledAccessGrants",
-            "value": "https://doi.example/009/600.45",
+            "value": "https://doi.example/ty009.sfrrss/600.45asasga",
             "source": "https://doi.example/no_org",
             "by": "self",
             "asserted": 1568699331,
@@ -82,7 +82,7 @@ def generate_token() -> Tuple:
       "sub": "requester@demo.org",
       "ga4gh_visa_v1": {
             "type": "ControlledAccessGrants",
-            "value": "https://doi.example/009/600.45",
+            "value": "https://doi.example/ty009.sfrrss/600.45asasga",
             "source": "https://doi.example/no_org",
             "by": "self",
             "asserted": 1568699331,
