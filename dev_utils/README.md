@@ -1,6 +1,16 @@
 # Local testing howto
 
-## Getting up and running fast
+## Getting started locally
+In root repository
+
+```
+export CONFIGFILE="./dev_utils/config.yaml"
+go run cmd/main.go
+```
+
+This requires having the certificates generated and the database up.
+
+## Getting up and running fast with docker compose
 
 ```command
 docker-compose -f compose-no-tls.yml up -d
@@ -61,7 +71,7 @@ docker run --rm --name client --network dev_utils_default -v "$PWD/certs:/certs"
 docker run --rm --name client --network dev_utils_default -v "$PWD/certs:/certs" \
 	-e PGSSLCERT=/certs/client.pem -e PGSSLKEY=/certs/client-key.pem -e PGSSLROOTCERT=/certs/ca.pem \
 	neicnordic/pg-client:latest postgresql://lega_out:lega_out@db:5432/lega \
-	-t -c "INSERT INTO local_ega_ebi.filedataset (id, file_id, dataset_stable_id) VALUES (1, 1, 'https://doi.example/009/600.45');"
+	-t -c "INSERT INTO local_ega_ebi.filedataset (id, file_id, dataset_stable_id) VALUES (1, 1, 'https://doi.example/ty009.sfrrss/600.45asasga');"
 
 ```
 
@@ -90,4 +100,4 @@ The mockauth service provides tokens that contain already permissions for the da
 
 The [API Reference](../docs/API.md) has example requests and responses.
 
-For quick example run: `curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:443/metadata/datasets`
+For quick example run: `curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:8443/metadata/datasets`

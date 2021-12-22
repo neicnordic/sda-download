@@ -37,7 +37,7 @@ docker run --rm --name client --network dev_utils_default -v "$PWD/certs:/certs"
 docker run --rm --name client --network dev_utils_default -v "$PWD/certs:/certs" \
 	-e PGSSLCERT=/certs/client.pem -e PGSSLKEY=/certs/client-key.pem -e PGSSLROOTCERT=/certs/ca.pem \
 	neicnordic/pg-client:latest postgresql://lega_out:lega_out@db:5432/lega \
-	-t -c "INSERT INTO local_ega_ebi.filedataset (id, file_id, dataset_stable_id) VALUES (1, 1, 'https://doi.example/009/600.45');"
+	-t -c "INSERT INTO local_ega_ebi.filedataset (id, file_id, dataset_stable_id) VALUES (1, 1, 'https://doi.example/ty009.sfrrss/600.45asasga');"
 
 
 # Make buckets if they don't exist already 
@@ -47,7 +47,7 @@ s3cmd -c s3cmd.conf mb s3://archive || true
 s3cmd -c s3cmd.conf put archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6 s3://archive/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
 
 # Test Health Endpoint
-check_health=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:443/health)
+check_health=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:8443/health)
 
 if [ "$check_health" != "200" ]; then
     echo "Health endpoint does not respond properly"
@@ -59,7 +59,7 @@ echo "Health endpoint is ok"
 
 # Test empty token
 
-check_401=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:443/metadata/datasets)
+check_401=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET --cacert certs/ca.pem https://localhost:8443/metadata/datasets)
 
 if [ "$check_401" != "401" ]; then
     echo "no token provided should give 401"
@@ -70,7 +70,7 @@ fi
 echo "got correct response when no token provided"
 
 
-check_405=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST --cacert certs/ca.pem https://localhost:443/metadata/datasets)
+check_405=$(curl -o /dev/null -s -w "%{http_code}\n" -X POST --cacert certs/ca.pem https://localhost:8443/metadata/datasets)
 
 if [ "$check_405" != "405" ]; then
     echo "POST should not be allowed"
@@ -86,10 +86,10 @@ token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
 
 ## Test datasets endpoint
 
-check_dataset=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:443/metadata/datasets | jq -r '.[0]')
+check_dataset=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:8443/metadata/datasets | jq -r '.[0]')
 
-if [ "$check_dataset" != "https://doi.example/009/600.45" ]; then
-    echo "dataset https://doi.example/009/600.45 not found"
+if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
     echo "got: ${check_dataset}"
     exit 1
 fi
@@ -98,7 +98,7 @@ echo "expected dataset found"
 
 ## Test datasets/files endpoint 
 
-check_files=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:443/metadata/datasets/https://doi.example/009/600.45/files" | jq -r '.[0].fileId')
+check_files=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:8443/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
 
 if [ "$check_files" != "urn:neic:001-002" ]; then
     echo "file with id urn:neic:001-002 not found"
@@ -116,7 +116,7 @@ export C4GH_PASSPHRASE
 
 crypt4gh decrypt --sk c4gh.sec.pem < dummy_data.c4gh > old-file.txt
 
-curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:443/files/urn:neic:001-002" --output test-download.txt
+curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:8443/files/urn:neic:001-002" --output test-download.txt
 
 cmp --silent old-file.txt test-download.txt
 status=$?
@@ -132,7 +132,7 @@ token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
 
 ## Test datasets endpoint
 
-check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET -I --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:443/metadata/datasets)
+check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET -I --cacert certs/ca.pem -H "Authorization: Bearer $token" https://localhost:8443/metadata/datasets)
 
 if [ "$check_empty_token" != "404" ]; then
     echo "response for empty token is not 404"

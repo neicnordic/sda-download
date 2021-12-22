@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/neicnordic/sda-download/internal/config"
@@ -49,6 +50,11 @@ var sqlOpen = sql.Open
 
 // logFatalf is an internal variable to ease testing
 var logFatalf = log.Fatalf
+
+func sanitizeString(str string) string {
+	var pattern = regexp.MustCompile(`([A-Za-z0-9-_:.]+)`)
+	return pattern.ReplaceAllString(str, "[identifier]: $1")
+}
 
 // NewDB creates a new DB connection
 func NewDB(config config.DatabaseConfig) (*SQLdb, error) {
@@ -237,11 +243,14 @@ var CheckFilePermission = func(fileID string) (string, error) {
 func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 	dbs.checkAndReconnectIfNeeded()
 
+	log.Debugf("check permissions for file with %s", sanitizeString(fileID))
+
 	db := dbs.DB
 	const query = "SELECT dataset_id FROM local_ega_ebi.file_dataset WHERE file_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, fileID).Scan(&datasetName); err != nil {
+		log.Errorf("requested file with %s does not exist", sanitizeString(fileID))
 		return "", err
 	}
 
@@ -277,6 +286,8 @@ var GetFile = func(fileID string) (*FileDownload, error) {
 func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	dbs.checkAndReconnectIfNeeded()
 
+	log.Debugf("check details for file with %s", sanitizeString(fileID))
+
 	db := dbs.DB
 	const query = "SELECT file_path, archive_file_size, header FROM local_ega_ebi.file WHERE file_id = $1"
 
@@ -284,11 +295,13 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	var hexString string
 	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString)
 	if err != nil {
+		log.Errorf("could not retrieve details for file %s, reason %s", sanitizeString(fileID), err)
 		return nil, err
 	}
 
 	fd.Header, err = hex.DecodeString(hexString)
 	if err != nil {
+		log.Errorf("could not decode file header for file %s, reason %s", sanitizeString(fileID), err)
 		return nil, err
 	}
 

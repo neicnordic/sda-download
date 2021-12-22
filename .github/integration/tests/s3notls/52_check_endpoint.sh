@@ -2,7 +2,9 @@
 
 cd dev_utils || exit 1
 
+# ------------------
 # Test Health Endpoint
+
 check_health=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/health)
 
 if [ "$check_health" != "200" ]; then
@@ -13,6 +15,7 @@ fi
 
 echo "Health endpoint is ok"
 
+# ------------------
 # Test empty token
 
 check_401=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/metadata/datasets)
@@ -35,6 +38,7 @@ fi
 
 echo "got correct response when POST method used"
 
+# ------------------
 # Test good token
 
 token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
@@ -43,8 +47,8 @@ token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
 
 check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
 
-if [ "$check_dataset" != "https://doi.example/009/600.45" ]; then
-    echo "dataset https://doi.example/009/600.45 not found"
+if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
     echo "got: ${check_dataset}"
     exit 1
 fi
@@ -53,7 +57,7 @@ echo "expected dataset found"
 
 ## Test datasets/files endpoint 
 
-check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/009/600.45/files" | jq -r '.[0].fileId')
+check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
 
 if [ "$check_files" != "urn:neic:001-002" ]; then
     echo "file with id urn:neic:001-002 not found"
@@ -82,6 +86,7 @@ else
     echo "Files are different"
 fi
 
+# ------------------
 # Test bad token
 
 token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
@@ -97,3 +102,21 @@ if [ "$check_empty_token" != "404" ]; then
 fi
 
 echo "got correct response when token has no permissions"
+
+# ------------------
+# Test token with untrusted sources
+# for this test we don't attach a list of trusted sources
+
+token=$(curl "http://localhost:8000/tokens" | jq -r  '.[2]')
+
+## Test datasets endpoint
+
+check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
+
+if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
+    echo "got: ${check_dataset}"
+    exit 1
+fi
+
+echo "expected dataset found for token from untrusted source"

@@ -1,6 +1,8 @@
 app:
+  host: "0.0.0.0"
   servercert: "./dev_utils/certs/download.pem"
   serverkey: "./dev_utils/certs/download-key.pem"
+  port: "8443"
 
 log:
   level: "debug"
@@ -52,3 +54,5 @@ oidc:
   # oidc configuration API must have values for "userinfo_endpoint" and "jwks_uri"
   configuration:
     url: "http://mockauth:8000/.well-known/openid-configuration"
+  trusted:
+    iss: /iss.json
