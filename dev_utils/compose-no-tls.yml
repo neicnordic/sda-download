@@ -73,6 +73,7 @@ services:
     image: python:3.8-slim
     volumes:
       - ./mockoidc/mockoidc.py:/mockoidc.py
+      - ./certs:/certs
     mem_limit: 256m
     ports:
       - "8000:8000"

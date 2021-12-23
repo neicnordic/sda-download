@@ -14,6 +14,10 @@ openssl x509 -req -in ./certs/db.csr -days 1200 -CA ./certs/ca.pem -CAkey ./cert
 openssl req -config "$(dirname "$0")"/ssl.cnf -new -nodes -newkey rsa:4096 -keyout ./certs/s3-key.pem -out ./certs/s3.csr -extensions server_cert
 openssl x509 -req -in ./certs/s3.csr -days 1200 -CA ./certs/ca.pem -CAkey ./certs/ca-key.pem -set_serial 01 -out ./certs/s3.pem -extensions server_cert -extfile "$(dirname "$0")"/ssl.cnf
 
+# Create certificate for mockauth
+openssl req -config "$(dirname "$0")"/ssl.cnf -new -nodes -newkey rsa:4096 -keyout ./certs/mockauth-key.pem -out ./certs/mockauth.csr -extensions server_cert
+openssl x509 -req -in ./certs/mockauth.csr -days 1200 -CA ./certs/ca.pem -CAkey ./certs/ca-key.pem -set_serial 01 -out ./certs/mockauth.pem -extensions server_cert -extfile "$(dirname "$0")"/ssl.cnf
+
 # Create client certificate
 openssl req -config "$(dirname "$0")"/ssl.cnf -new -nodes -newkey rsa:4096 -keyout ./certs/client-key.pem -out ./certs/client.csr -extensions client_cert
 openssl x509 -req -in ./certs/client.csr -days 1200 -CA ./certs/ca.pem -CAkey ./certs/ca-key.pem -set_serial 01 -out ./certs/client.pem -extensions client_cert -extfile "$(dirname "$0")"/ssl.cnf
