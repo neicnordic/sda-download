@@ -76,6 +76,7 @@ type OIDCConfig struct {
 	// Mandatory.
 	ConfigurationURL string
 	TrustedISS       string
+	CACert           string
 }
 
 type DatabaseConfig struct {
@@ -236,6 +237,10 @@ func (c *ConfigMap) configureOIDC() {
 	if viper.IsSet("oidc.trusted.iss") {
 		c.OIDC.TrustedISS = viper.GetString("oidc.trusted.iss")
 	}
+	if viper.IsSet("oidc.cacert") {
+		c.OIDC.CACert = viper.GetString("oidc.cacert")
+	}
+
 }
 
 // configArchive provides configuration for the archive storage
