@@ -1,10 +1,10 @@
 [
     {
-        "iss": "http://demo.example",
-        "jku": "http://mockauth:8000/idp/profile/oidc/keyset"
+        "iss": "https://demo.example",
+        "jku": "https://mockauth:8000/idp/profile/oidc/keyset"
     },
     {
-        "iss": "http://demo1.example",
-        "jku": "http://mockauth:8000/idp/profile/oidc/keyset"
+        "iss": "https://demo1.example",
+        "jku": "https://mockauth:8000/idp/profile/oidc/keyset"
     }
 ]
