@@ -10,7 +10,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20200716060623-6b2b4cb092cc
-	github.com/lestrrat-go/jwx v1.2.13
+	github.com/lestrrat-go/jwx v1.2.14
 	github.com/lib/pq v1.10.4
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.10.1
