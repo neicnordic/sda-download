@@ -11,6 +11,7 @@ import (
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
@@ -224,14 +225,14 @@ func validateVisa(visa string) (jwt.Token, bool) {
 	o := OIDCDetails{
 		JWK: header.Signatures()[0].ProtectedHeaders().JWKSetURL(),
 	}
-	wl, ok := ValidateTrustedIss(payload.Issuer(), o.JWK)
+	ok := validateTrustedIss(config.Config.OIDC.TrustedList, payload.Issuer(), o.JWK)
 	// Verify that visa comes from a trusted issuer
 	if !ok {
 		log.Infof("combination of iss: %s and jku: %s is not trusted", payload.Issuer(), o.JWK)
 
 		return nil, false
 	}
-
+	wl := config.Config.OIDC.Whitelist
 	log.Debugf("whitelist: %v", wl)
 
 	// Verify visa signature
@@ -293,4 +294,22 @@ func getDatasets(parsedVisa jwt.Token, datasets []string) []string {
 	}
 
 	return datasets
+}
+
+// ValidateTrustedIss searches a nested list of TrustedISS
+// looking for a map with a specific key value pair for iss.
+// If found checkISS returns true
+// if the list is nil it returns true, as the path for the trusted issue file was not set
+func validateTrustedIss(obj []config.TrustedISS, issuerValue string, jkuValue string) bool {
+	log.Debugf("check combination of iss: %s and jku: %s", issuerValue, jkuValue)
+	if obj != nil {
+		for _, value := range obj {
+			if value.ISS == issuerValue && value.JKU == jkuValue {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
 }
