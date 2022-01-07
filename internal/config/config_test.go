@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
+	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -152,6 +153,37 @@ func (suite *TestSuite) TestDatabaseConfig() {
 	assert.Equal(suite.T(), "test", c.DB.CACert)
 	assert.Equal(suite.T(), "test", c.DB.ClientCert)
 	assert.Equal(suite.T(), "test", c.DB.ClientKey)
+
+}
+
+func (suite *TestSuite) TestOIDC() {
+
+	// Test wrong file
+	viper.Set("oidc.trusted.iss", "../../iss.json")
+	c := &ConfigMap{}
+	err := c.configureOIDC()
+	assert.Error(suite.T(), err, "Error expected")
+
+	viper.Set("oidc.trusted.iss", "../../dev_utils/iss.json")
+	c = &ConfigMap{}
+	err = c.configureOIDC()
+	assert.NoError(suite.T(), err)
+
+	// Test pass OIDC config
+	viper.Set("oidc.trusted.iss", "../../dev_utils/iss.json")
+	viper.Set("oidc.configuration.url", "test")
+	viper.Set("oidc.cacert", "test")
+
+	trustedList := []TrustedISS([]TrustedISS{{ISS: "https://demo.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}, {ISS: "https://demo1.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}})
+
+	whitelist := jwk.NewMapWhitelist().Add("https://mockauth:8000/idp/profile/oidc/keyset")
+	c = &ConfigMap{}
+	err = c.configureOIDC()
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "test", c.OIDC.ConfigurationURL)
+	assert.Equal(suite.T(), "test", c.OIDC.CACert)
+	assert.Equal(suite.T(), trustedList, c.OIDC.TrustedList)
+	assert.Equal(suite.T(), whitelist, c.OIDC.Whitelist)
 
 }
 

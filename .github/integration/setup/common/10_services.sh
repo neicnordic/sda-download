@@ -5,7 +5,10 @@ docker build -t neicnordic/sda-download:latest . || exit 1
 
 cd dev_utils || exit 1
 
+bash ./make_certs.sh
+
 if [ "$STORAGETYPE" = s3notls ]; then
+
     docker-compose -f compose-no-tls.yml up -d
 
     RETRY_TIMES=0
@@ -23,7 +26,6 @@ if [ "$STORAGETYPE" = s3notls ]; then
     done
 
 else
-    bash ./make_certs.sh
 
     tostart="certfixer db"
     if [ "$STORAGETYPE" = s3 ]; then

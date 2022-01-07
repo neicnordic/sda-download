@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/pkg/request"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetOIDCDetails_Fail_MakeRequest(t *testing.T) {
@@ -306,4 +308,25 @@ func TestGetVisas_Success(t *testing.T) {
 	// Return mock functions to originals
 	request.MakeRequest = originalMakeRequest
 
+}
+
+func TestValidateTrustedIss(t *testing.T) {
+
+	// this also tests checkIss
+	trustedList := []config.TrustedISS([]config.TrustedISS{{ISS: "https://demo.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}, {ISS: "https://demo1.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}})
+
+	ok := validateTrustedIss(trustedList, "https://demo.example", "https://mockauth:8000/idp/profile/oidc/keyset")
+
+	assert.True(t, ok, "values might have changed in fixture")
+
+	ok = validateTrustedIss(trustedList, "https://demo3.example", "https://mockauth:8000/idp/profile/oidc/keyset")
+
+	assert.False(t, ok, "values might have changed in fixture")
+}
+
+func TestValidateTrustedIssNoConfig(t *testing.T) {
+
+	ok := validateTrustedIss(nil, "https://demo.example", "https://mockauth:8000/idp/profile/oidc/keyset")
+
+	assert.True(t, ok, "this should be true")
 }

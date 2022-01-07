@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jws"
 	"github.com/lestrrat-go/jwx/jwt"
+	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/pkg/request"
 	log "github.com/sirupsen/logrus"
@@ -48,8 +50,13 @@ func GetOIDCDetails(url string) (OIDCDetails, error) {
 // VerifyJWT verifies the token signature
 func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 	log.Debug("verifying JWT signature")
-	// Why do we use context.TODO() ? https://pkg.go.dev/context#TODO
-	keyset, err := jwk.Fetch(context.TODO(), o.JWK)
+	// we create a basic context
+	// context.TODO and context.Background would have worked as well
+	// we wanted to have it detailed, and we don't want it to hang forever
+	// 30 seconds should be enough
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	keyset, err := jwk.Fetch(ctx, o.JWK, jwk.WithHTTPClient(request.Client))
 	if err != nil {
 		log.Errorf("failed to request JWK set from %s, %s", o.JWK, err)
 		return nil, err
@@ -59,12 +66,15 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 		log.Errorf("cannot get key from set , %s", err)
 	}
 
-	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.InferAlgorithmFromKey(true))
+	verifiedToken, err := jwt.Parse([]byte(token), jwt.WithKeySet(keyset), jwt.InferAlgorithmFromKey(true), jwt.WithHTTPClient(request.Client))
 	if err != nil {
+		log.Debugf("failed to infer validation from token, reason %s", err)
 
-		verifiedToken, err = jwt.Parse([]byte(token), jwt.WithVerify(jwa.RS256, key))
+		// we try with RSA256 which is in most of the providers our there
+		verifiedToken, err = jwt.Parse([]byte(token), jwt.WithVerify(jwa.RS256, key), jwt.WithHTTPClient(request.Client))
 		if err != nil {
-			log.Errorf("failed to verify token signature of token %s, %s", token, err)
+			log.Errorf("failed to verify token as RSA256 signature of token %s, %s", token, err)
+			return nil, err
 		}
 	}
 	log.Debug(verifiedToken)
@@ -215,17 +225,30 @@ func validateVisa(visa string) (jwt.Token, bool) {
 	o := OIDCDetails{
 		JWK: header.Signatures()[0].ProtectedHeaders().JWKSetURL(),
 	}
+	ok := validateTrustedIss(config.Config.OIDC.TrustedList, payload.Issuer(), o.JWK)
 	// Verify that visa comes from a trusted issuer
-	if !ValidateTrustedIss(payload.Issuer(), o.JWK) {
+	if !ok {
 		log.Infof("combination of iss: %s and jku: %s is not trusted", payload.Issuer(), o.JWK)
+
 		return nil, false
 	}
+	wl := config.Config.OIDC.Whitelist
+	log.Debugf("whitelist: %v", wl)
 
 	// Verify visa signature
-	verifiedVisa, err := VerifyJWT(o, visa)
-	if err != nil {
-		log.Errorf("failed to validate visa, %s", err)
-		return nil, false
+	var verifiedVisa jwt.Token
+	if wl != nil {
+		verifiedVisa, err = jwt.Parse([]byte(visa), jwt.InferAlgorithmFromKey(true), jwt.WithVerifyAuto(true), jwt.WithFetchWhitelist(wl), jwt.WithHTTPClient(request.Client))
+		if err != nil {
+			log.Errorf("failed to verify token signature of token %s, %s", visa, err)
+			return nil, false
+		}
+	} else {
+		verifiedVisa, err = VerifyJWT(o, visa)
+		if err != nil {
+			log.Errorf("failed to verify token signature of token %s, %s", visa, err)
+			return nil, false
+		}
 	}
 
 	// Validate visa claims, exp, iat, nbf
@@ -271,4 +294,22 @@ func getDatasets(parsedVisa jwt.Token, datasets []string) []string {
 	}
 
 	return datasets
+}
+
+// ValidateTrustedIss searches a nested list of TrustedISS
+// looking for a map with a specific key value pair for iss.
+// If found checkISS returns true
+// if the list is nil it returns true, as the path for the trusted issue file was not set
+func validateTrustedIss(obj []config.TrustedISS, issuerValue string, jkuValue string) bool {
+	log.Debugf("check combination of iss: %s and jku: %s", issuerValue, jkuValue)
+	if obj != nil {
+		for _, value := range obj {
+			if value.ISS == issuerValue && value.JKU == jkuValue {
+				return true
+			}
+		}
+		return false
+	}
+
+	return true
 }

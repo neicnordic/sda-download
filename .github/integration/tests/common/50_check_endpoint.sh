@@ -45,7 +45,7 @@ echo "got correct response when POST method used"
 # ------------------
 # Test good token
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
+token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[0]')
 
 ## Test datasets endpoint
 
@@ -93,7 +93,7 @@ fi
 # ------------------
 # Test bad token
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
+token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[1]')
 
 ## Test datasets endpoint
 
@@ -111,7 +111,7 @@ echo "got correct response when token has no permissions"
 # Test token with untrusted sources
 # for this test we attach a list of trusted sources
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[2]')
+token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[2]')
 
 ## Test datasets endpoint
 

@@ -3,10 +3,15 @@ package request
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/neicnordic/sda-download/internal/config"
+	log "github.com/sirupsen/logrus"
 )
 
 // Client stores a HTTP client, so that it doesn't need to be initialised on every request
@@ -14,12 +19,25 @@ var Client *http.Client
 
 // InitialiseClient sets up an HTTP client and returns it
 func InitialiseClient() (*http.Client, error) {
-	// Set up HTTP client
+	caCertPool := x509.NewCertPool()
+	if config.Config.OIDC.CACert != "" {
+		caCert, err := ioutil.ReadFile(config.Config.OIDC.CACert)
+		if err != nil {
+			log.Errorf("Reading certificate file failed: %v", err)
+			return nil, err
+		}
+		log.Debug("Added certificate")
+		caCertPool.AppendCertsFromPEM(caCert)
+	} else {
+		caCertPool = nil // So that default root certs are used
+	}
+	// Set up HTTP(S) client
 	t := http.DefaultTransport.(*http.Transport).Clone()
 	t.MaxIdleConns = 100
 	t.MaxConnsPerHost = 100
 	t.MaxIdleConnsPerHost = 100
 	t.TLSClientConfig = &tls.Config{
+		RootCAs:    caCertPool,
 		MinVersion: tls.VersionTLS12,
 	}
 	client := &http.Client{

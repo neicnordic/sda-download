@@ -84,7 +84,7 @@ echo "got correct response when POST method used"
 
 # Test good token
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
+token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[0]')
 
 ## Test datasets endpoint
 
@@ -130,7 +130,7 @@ fi
 
 # Test bad token
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
+token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[1]')
 
 ## Test datasets endpoint
 

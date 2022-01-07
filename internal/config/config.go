@@ -1,14 +1,17 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 	"time"
 
 	"github.com/elixir-oslo/crypt4gh/keys"
+	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/neicnordic/sda-download/internal/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -71,11 +74,18 @@ type SessionConfig struct {
 	HTTPOnly bool
 }
 
+type TrustedISS struct {
+	ISS string `json:"iss"`
+	JKU string `json:"jku"`
+}
+
 type OIDCConfig struct {
 	// OIDC OP configuration URL /.well-known/openid-configuration
 	// Mandatory.
 	ConfigurationURL string
-	TrustedISS       string
+	Whitelist        *jwk.MapWhitelist
+	TrustedList      []TrustedISS
+	CACert           string
 }
 
 type DatabaseConfig struct {
@@ -171,8 +181,11 @@ func NewConfig() (*ConfigMap, error) {
 	c.applyDefaults()
 	c.sessionConfig()
 	c.configArchive()
-	c.configureOIDC()
-	err := c.appConfig()
+	err := c.configureOIDC()
+	if err != nil {
+		return nil, err
+	}
+	err = c.appConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -231,11 +244,23 @@ func configS3Storage(prefix string) storage.S3Conf {
 	return s3
 }
 
-func (c *ConfigMap) configureOIDC() {
+func (c *ConfigMap) configureOIDC() error {
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
+	c.OIDC.Whitelist = nil
+	c.OIDC.TrustedList = nil
 	if viper.IsSet("oidc.trusted.iss") {
-		c.OIDC.TrustedISS = viper.GetString("oidc.trusted.iss")
+		obj, err := readTrustedIssuers(viper.GetString("oidc.trusted.iss"))
+		if err != nil {
+			return err
+		}
+		c.OIDC.Whitelist = constructWhitelist(obj)
+		c.OIDC.TrustedList = obj
 	}
+	if viper.IsSet("oidc.cacert") {
+		c.OIDC.CACert = viper.GetString("oidc.cacert")
+	}
+
+	return nil
 }
 
 // configArchive provides configuration for the archive storage
@@ -321,6 +346,39 @@ func (c *ConfigMap) configDatabase() error {
 	}
 	c.DB = db
 	return nil
+}
+
+// readTrustedIssuers reads information about trusted iss: jku keypair
+// the data can be changed in the deployment by configuring OIDC_TRUSTED_ISS env var
+func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Errorf("Error when opening file with issuers, reason: %v", err)
+		return nil, err
+	}
+
+	// Now let's unmarshall the data into `payload`
+	var payload []TrustedISS
+	err = json.Unmarshal(content, &payload)
+	if err != nil {
+		log.Errorf("Error during Unmarshal, reason: %v", err)
+		return nil, err
+	}
+
+	return payload, nil
+}
+
+func constructWhitelist(obj []TrustedISS) *jwk.MapWhitelist {
+	keys := make(map[string]bool)
+	wl := jwk.NewMapWhitelist()
+
+	for _, value := range obj {
+		if _, ok := keys[value.JKU]; !ok {
+			keys[value.JKU] = true
+			wl.Add(value.JKU)
+		}
+	}
+	return wl
 }
 
 // GetC4GHKey reads and decrypts and returns the c4gh key

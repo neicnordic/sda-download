@@ -10,6 +10,12 @@ go run cmd/main.go
 
 This requires having the certificates generated and the database up.
 
+First create the necessary credentials.
+
+```command
+sh make_certs.sh
+```
+
 ## Getting up and running fast with docker compose
 
 ```command
@@ -23,12 +29,6 @@ sh run_integration_test_no_tls.sh
 ```
 
 ## Starting the services using docker compose with TLS enabled
-
-First create the necessary credentials.
-
-```command
-sh make_certs.sh
-```
 
 To start all the backend services using docker compose.
 
@@ -93,7 +93,7 @@ https://localhost:9000
 
 The mockauth service provides tokens that contain already permissions for the dataset inserted in the db.
 
-`token=$(curl "http://localhost:8000/tokens" | jq -r '.[0]')` - first token of this response is a good token, the 2nd one is a token without any permissions
+`token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r '.[0]')` - first token of this response is a good token, the 2nd one is a token without any permissions and the 3rd one is a token to be tested when using a trusted source
 
 
 ### Try to query the endpoint
