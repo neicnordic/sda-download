@@ -43,6 +43,7 @@ func GetOIDCDetails(url string) (OIDCDetails, error) {
 		log.Errorf("failed to parse JSON response, %s", err)
 		return u, err
 	}
+	defer response.Body.Close()
 	log.Debugf("received OIDC config %s from %s", u, url)
 	return u, nil
 }
