@@ -6,6 +6,7 @@ app:
 
 log:
   level: "debug"
+  format: "json"
 
 archive:
   type: ""
