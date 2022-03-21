@@ -1,4 +1,4 @@
-FROM golang:1.16.15-alpine as builder
+FROM golang:alpine as builder
 
 ENV GOPATH=$PWD
 ENV CGO_ENABLED=0
