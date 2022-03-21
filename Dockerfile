@@ -1,11 +1,11 @@
-FROM golang:1.16.15-alpine as builder
+FROM golang:alpine as builder
 
 ENV GOPATH=$PWD
 ENV CGO_ENABLED=0
 
 COPY . .
 
-RUN go build -o ./sda-download ./cmd
+RUN go build -buildvcs=false -o ./sda-download ./cmd
 RUN echo "nobody:x:65534:65534:nobody:/:/sbin/nologin" > passwd
 
 FROM scratch
