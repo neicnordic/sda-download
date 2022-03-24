@@ -72,6 +72,10 @@ type SessionConfig struct {
 	// Cookie HTTPOnly value. If true, cookie can't be read by JavaScript.
 	// Optional. Default value true
 	HTTPOnly bool
+
+	// Name of session cookie.
+	// Optional. Default value sda_session_key
+	Name string
 }
 
 type TrustedISS struct {
@@ -214,6 +218,7 @@ func (c *ConfigMap) applyDefaults() {
 	viper.SetDefault("session.secure", true)
 	viper.SetDefault("session.httponly", true)
 	viper.SetDefault("log.level", "info")
+	viper.SetDefault("session.name", "sda_session_key")
 }
 
 // configS3Storage populates and returns a S3Conf from the
@@ -312,6 +317,7 @@ func (c *ConfigMap) sessionConfig() {
 	c.Session.Domain = viper.GetString("session.domain")
 	c.Session.Secure = viper.GetBool("session.secure")
 	c.Session.HTTPOnly = viper.GetBool("session.httponly")
+	c.Session.Name = viper.GetString("session.name")
 }
 
 // configDatabase provides configuration for the database

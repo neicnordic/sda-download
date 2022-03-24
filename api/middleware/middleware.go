@@ -18,7 +18,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// Check if dataset permissions are cached to session
-		sessionCookie, err := r.Cookie("sda_session_key")
+		sessionCookie, err := r.Cookie(config.Config.Session.Name)
 		if err != nil {
 			log.Debugf("no session cookie received")
 		}
@@ -59,7 +59,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			key := session.NewSessionKey()
 			session.Set(key, datasets)
 			sessionCookie := &http.Cookie{
-				Name:     "sda_session_key",
+				Name:     config.Config.Session.Name,
 				Value:    key,
 				Domain:   config.Config.Session.Domain,
 				Secure:   config.Config.Session.Secure,

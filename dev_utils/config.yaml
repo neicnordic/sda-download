@@ -35,6 +35,9 @@ session:
   # session cookie HttpOnly value, if true, TLS must be active
   # default value = true
   httponly: true
+  # name of session cookie
+  # default value = sda_session_key
+  name: "sda_session_key"
 
 c4gh:
   passphrase: "oaagCP1YgAZeEyl2eJAkHv9lkcWXWFgm"
