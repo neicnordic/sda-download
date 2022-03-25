@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/session"
 	"github.com/neicnordic/sda-download/pkg/auth"
 )
@@ -205,7 +206,7 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 	}
 	// nolint:bodyclose
 	for _, c := range w.Result().Cookies() {
-		if c.Name == "sda_session_key" {
+		if c.Name == config.Config.Session.Name {
 			if c.Value != expectedSessionKey {
 				t.Errorf("TestTokenMiddleware_Success_NoCache failed, got %s expected %s", c.Value, expectedSessionKey)
 			}
@@ -262,7 +263,7 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 	}
 	// nolint:bodyclose
 	for _, c := range w.Result().Cookies() {
-		if c.Name == "sda_session_key" {
+		if c.Name == config.Config.Session.Name {
 			t.Errorf("TestTokenMiddleware_Success_FromCache failed, got a session cookie, when should not have")
 		}
 	}
