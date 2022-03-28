@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
-	github.com/aws/aws-sdk-go v1.43.25
+	github.com/aws/aws-sdk-go v1.43.27
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/elixir-oslo/crypt4gh v1.5.0
 	github.com/google/uuid v1.3.0
