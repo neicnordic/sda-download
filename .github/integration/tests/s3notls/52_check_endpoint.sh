@@ -95,8 +95,8 @@ token=$(curl --cacert certs/ca.pem "https://localhost:8000/tokens" | jq -r  '.[1
 
 check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets)
 
-if [ "$check_empty_token" != "404" ]; then
-    echo "response for empty token is not 404"
+if [ "$check_empty_token" != "200" ]; then
+    echo "response for empty token is not 200"
     echo "got: ${check_empty_token}"
     exit 1
 fi

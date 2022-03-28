@@ -151,7 +151,7 @@ var GetVisas = func(o OIDCDetails, token string) (*Visas, error) {
 // GetPermissions parses visas and finds matching dataset names from the database, returning a list of matches
 var GetPermissions = func(visas Visas) []string {
 	log.Debug("parsing permissions from visas")
-	var datasets []string
+	datasets := []string{} // default empty array
 
 	log.Debugf("number of visas to check: %d", len(visas.Visa))
 

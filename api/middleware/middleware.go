@@ -48,12 +48,11 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			}
 
 			// Get permissions
+			// This used to cause a "404 no datasets found", but now the error has been moved deeper:
+			// 200 OK with [] empty dataset list, when listing datasets (use case for sda-filesystem download tool)
+			// 404 dataset not found, when listing files from a dataset
+			// 401 unauthorised, when downloading a file
 			datasets = auth.GetPermissions(*visas)
-			if len(datasets) == 0 {
-				log.Debug("token carries no dataset permissions matching the database")
-				http.Error(w, "no datasets found", 404)
-				return
-			}
 
 			// Start a new session and store datasets under the session key
 			key := session.NewSessionKey()
