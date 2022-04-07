@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
@@ -82,6 +83,19 @@ func Files(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	dataset := vars["dataset"]
+
+	// Get optional dataset scheme
+	// A scheme can be delivered separately in a query parameter
+	// as schemes may sometimes be problematic when they travel
+	// in the path. A client can conveniently split the scheme with "://"
+	// which results in 1 item if there is no scheme (e.g. EGAD) or 2 items
+	// if there was a scheme (e.g. DOI)
+	scheme := r.URL.Query().Get("scheme")
+	if scheme != "" {
+		log.Debugf("adding scheme=%s to dataset=%s", scheme, dataset)
+		dataset = fmt.Sprintf("%s://%s", scheme, dataset)
+		log.Debugf("new dataset=%s", dataset)
+	}
 
 	// Get dataset files
 	files, code, err := getFiles(dataset, r.Context())

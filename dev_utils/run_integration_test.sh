@@ -96,9 +96,23 @@ fi
 
 echo "expected dataset found"
 
-## Test datasets/files endpoint 
+## Test datasets/files endpoint, no scheme
+## dataset=https://doi.example/ty009.sfrrss/600.45asasga
 
 check_files=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:8443/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
+
+if [ "$check_files" != "urn:neic:001-002" ]; then
+    echo "file with id urn:neic:001-002 not found"
+    echo "got: ${check_files}"
+    exit 1
+fi
+
+echo "expected file found"
+
+## Test datasets/files endpoint, with scheme param (scheme separated from dataset)
+## dataset=doi.example/ty009.sfrrss/600.45asasga, scheme=https
+
+check_files=$(curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:8443/metadata/datasets/doi.example/ty009.sfrrss/600.45asasga/files?scheme=https" | jq -r '.[0].fileId')
 
 if [ "$check_files" != "urn:neic:001-002" ]; then
     echo "file with id urn:neic:001-002 not found"
