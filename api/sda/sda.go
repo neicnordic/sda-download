@@ -92,9 +92,9 @@ func Files(w http.ResponseWriter, r *http.Request) {
 	// if there was a scheme (e.g. DOI)
 	scheme := r.URL.Query().Get("scheme")
 	if scheme != "" {
-		log.Debugf("adding scheme=%s to dataset=%s", scheme, dataset)
+		log.Debugf("adding scheme=%s to dataset=%s", sanitizeString(scheme), sanitizeString(dataset))
 		dataset = fmt.Sprintf("%s://%s", scheme, dataset)
-		log.Debugf("new dataset=%s", dataset)
+		log.Debugf("new dataset=%s", sanitizeString(dataset))
 	}
 
 	// Get dataset files
