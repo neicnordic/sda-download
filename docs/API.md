@@ -24,6 +24,22 @@ Files contained by a dataset are listed using the `datasetName` from `/metadata/
 ```
 GET /metadata/datasets/{datasetName}/files
 ```
+#### Scheme Parameter
+The `?scheme=` query parameter is optional. When a dataset contains a scheme, it may sometimes be problematic with reverse proxies.
+The scheme can be split from the dataset name, and supplied in a query parameter.
+```
+dataset := strings.Split("https://doi.org/abc/123", "://")
+len(dataset) // 2 -> scheme can be used
+dataset[0] // "https"
+dataset[1] // "doi.org/abc/123
+
+dataset := strings.Split("EGAD1000", "://")
+len(dataset) // 1 -> no scheme
+dataset[0] // "EGAD1000"
+```
+```
+GET /metadata/datasets/{datasetName}/files?scheme=https
+```
 ### Response
 ```
 [

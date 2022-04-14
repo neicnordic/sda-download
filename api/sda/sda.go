@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/elixir-oslo/crypt4gh/model/headers"
 	"github.com/elixir-oslo/crypt4gh/streaming"
@@ -82,6 +84,24 @@ func Files(w http.ResponseWriter, r *http.Request) {
 
 	vars := mux.Vars(r)
 	dataset := vars["dataset"]
+
+	// Get optional dataset scheme
+	// A scheme can be delivered separately in a query parameter
+	// as schemes may sometimes be problematic when they travel
+	// in the path. A client can conveniently split the scheme with "://"
+	// which results in 1 item if there is no scheme (e.g. EGAD) or 2 items
+	// if there was a scheme (e.g. DOI)
+	scheme := r.URL.Query().Get("scheme")
+	schemeLogs := strings.Replace(scheme, "\n", "", -1)
+	schemeLogs = strings.Replace(schemeLogs, "\r", "", -1)
+
+	datasetLogs := strings.Replace(dataset, "\n", "", -1)
+	datasetLogs = strings.Replace(datasetLogs, "\r", "", -1)
+	if scheme != "" {
+		log.Debugf("adding scheme=%s to dataset=%s", schemeLogs, datasetLogs)
+		dataset = fmt.Sprintf("%s://%s", scheme, dataset)
+		log.Debugf("new dataset=%s", datasetLogs)
+	}
 
 	// Get dataset files
 	files, code, err := getFiles(dataset, r.Context())
