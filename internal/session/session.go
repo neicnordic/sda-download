@@ -27,9 +27,16 @@ func InitialiseSessionCache() (*ristretto.Cache, error) {
 	log.Debug("creating session cache")
 	sessionCache, err := ristretto.NewCache(
 		&ristretto.Config{
-			NumCounters: 1e7,     // Num keys to track frequency of (10 M = max. 1 M users)
-			MaxCost:     1 << 30, // Maximum cost of cache (1 GiB)
-			BufferItems: 64,      // Number of keys per Get buffer
+			// Maximum number of items in cache
+			// A recommended number is expected maximum times 10
+			// so 100,000 * 10 = 1,000,000
+			NumCounters: 1e6,
+			// Maximum size of cache
+			// 100,000 items at most, items have varying sizes, but are generally
+			// very small, in the range of less than 1kB each.
+			// Max memory usage with expected payloads are ~100MB
+			MaxCost:     100000,
+			BufferItems: 64,
 		},
 	)
 	if err != nil {
@@ -59,6 +66,7 @@ func Set(key string, datasets []string) {
 	datasetCache := DatasetCache{
 		Datasets: datasets,
 	}
+	// Each item has a cost of 1, with max size of cache being 100,000 items
 	SessionCache.SetWithTTL(key, datasetCache, 1, config.Config.Session.Expiration)
 	log.Debug("stored to cache")
 }
