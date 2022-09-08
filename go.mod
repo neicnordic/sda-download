@@ -6,12 +6,12 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/aws/aws-sdk-go v1.44.91
 	github.com/dgraph-io/ristretto v0.1.0
-	github.com/elixir-oslo/crypt4gh v1.5.1
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/johannesboyne/gofakes3 v0.0.0-20220314170512-33c13122505e
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/lib/pq v1.10.6
+	github.com/neicnordic/crypt4gh v1.5.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
