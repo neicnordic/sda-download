@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elixir-oslo/crypt4gh/keys"
 	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/neicnordic/crypt4gh/keys"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

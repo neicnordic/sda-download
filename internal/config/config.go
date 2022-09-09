@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/elixir-oslo/crypt4gh/keys"
 	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/neicnordic/crypt4gh/keys"
 	"github.com/neicnordic/sda-download/internal/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"

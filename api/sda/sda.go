@@ -12,9 +12,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/elixir-oslo/crypt4gh/model/headers"
-	"github.com/elixir-oslo/crypt4gh/streaming"
 	"github.com/gorilla/mux"
+	"github.com/neicnordic/crypt4gh/model/headers"
+	"github.com/neicnordic/crypt4gh/streaming"
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
