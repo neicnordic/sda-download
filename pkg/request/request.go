@@ -5,8 +5,8 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -21,7 +21,7 @@ var Client *http.Client
 func InitialiseClient() (*http.Client, error) {
 	caCertPool := x509.NewCertPool()
 	if config.Config.OIDC.CACert != "" {
-		caCert, err := ioutil.ReadFile(config.Config.OIDC.CACert)
+		caCert, err := os.ReadFile(config.Config.OIDC.CACert)
 		if err != nil {
 			log.Errorf("Reading certificate file failed: %v", err)
 			return nil, err
