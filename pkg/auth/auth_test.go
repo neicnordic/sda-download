@@ -3,7 +3,7 @@ package auth
 import (
 	"bytes"
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -55,7 +55,7 @@ func TestGetOIDCDetails_Fail_JSONDecode(t *testing.T) {
 		response := &http.Response{
 			StatusCode: 200,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(``)),
+			Body: io.NopCloser(bytes.NewBufferString(``)),
 			// Response headers
 			Header: make(http.Header),
 		}
@@ -94,7 +94,7 @@ func TestGetOIDCDetails_Success(t *testing.T) {
 		response := &http.Response{
 			StatusCode: 200,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(`{"userinfo_endpoint":"https://aai.org/oidc/userinfo","jwks_uri":"https://aai.org/oidc/jwks"}`)),
+			Body: io.NopCloser(bytes.NewBufferString(`{"userinfo_endpoint":"https://aai.org/oidc/userinfo","jwks_uri":"https://aai.org/oidc/jwks"}`)),
 			// Response headers
 			Header: make(http.Header),
 		}
@@ -248,7 +248,7 @@ func TestGetVisas_Fail_JSONDecode(t *testing.T) {
 		response := &http.Response{
 			StatusCode: 200,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(``)),
+			Body: io.NopCloser(bytes.NewBufferString(``)),
 			// Response headers
 			Header: make(http.Header),
 		}
@@ -284,7 +284,7 @@ func TestGetVisas_Success(t *testing.T) {
 		response := &http.Response{
 			StatusCode: 200,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(`{"ga4gh_passport_v1":["visa1","visa2"]}`)),
+			Body: io.NopCloser(bytes.NewBufferString(`{"ga4gh_passport_v1":["visa1","visa2"]}`)),
 			// Response headers
 			Header: make(http.Header),
 		}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -79,7 +78,7 @@ func TestMakeRequest_Fail_StatusCode(t *testing.T) {
 		return &http.Response{
 			StatusCode: 500,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(`error`)),
+			Body: io.NopCloser(bytes.NewBufferString(`error`)),
 			// Response headers
 			Header: make(http.Header),
 		}
@@ -126,7 +125,7 @@ func TestMakeRequest_Success(t *testing.T) {
 		return &http.Response{
 			StatusCode: 200,
 			// Response body
-			Body: ioutil.NopCloser(bytes.NewBufferString(`hello`)),
+			Body: io.NopCloser(bytes.NewBufferString(`hello`)),
 			// Response headers
 			Header: make(http.Header),
 		}

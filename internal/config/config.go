@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -364,7 +363,7 @@ func (c *ConfigMap) configDatabase() error {
 // readTrustedIssuers reads information about trusted iss: jku keypair
 // the data can be changed in the deployment by configuring OIDC_TRUSTED_ISS env var
 func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Errorf("Error when opening file with issuers, reason: %v", err)
 		return nil, err
