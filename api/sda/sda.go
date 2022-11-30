@@ -96,11 +96,11 @@ func Files(w http.ResponseWriter, r *http.Request) {
 	// which results in 1 item if there is no scheme (e.g. EGAD) or 2 items
 	// if there was a scheme (e.g. DOI)
 	scheme := r.URL.Query().Get("scheme")
-	schemeLogs := strings.Replace(scheme, "\n", "", -1)
-	schemeLogs = strings.Replace(schemeLogs, "\r", "", -1)
+	schemeLogs := strings.ReplaceAll(scheme, "\n", "")
+	schemeLogs = strings.ReplaceAll(schemeLogs, "\r", "")
 
-	datasetLogs := strings.Replace(dataset, "\n", "", -1)
-	datasetLogs = strings.Replace(datasetLogs, "\r", "", -1)
+	datasetLogs := strings.ReplaceAll(dataset, "\n", "")
+	datasetLogs = strings.ReplaceAll(datasetLogs, "\r", "")
 	if scheme != "" {
 		log.Debugf("adding scheme=%s to dataset=%s", schemeLogs, datasetLogs)
 		dataset = fmt.Sprintf("%s://%s", scheme, dataset)
