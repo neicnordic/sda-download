@@ -36,6 +36,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			token, code, err := auth.GetToken(r.Header.Get("Authorization"))
 			if err != nil {
 				http.Error(w, err.Error(), code)
+
 				return
 			}
 
@@ -44,6 +45,7 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 			if err != nil {
 				log.Debug("failed to validate token at AAI")
 				http.Error(w, "bad token", 401)
+
 				return
 			}
 
@@ -83,8 +85,8 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 // storeDatasets stores the dataset list to the request context
 func storeDatasets(ctx context.Context, datasets []string) context.Context {
 	log.Debugf("storing %v datasets to request context", datasets)
-	// nolint:staticcheck
-	return context.WithValue(ctx, "datasets", datasets)
+
+	return context.WithValue(ctx, "datasets", datasets) // nolint:staticcheck
 }
 
 // GetDatasets extracts the dataset list from the request context
@@ -92,8 +94,10 @@ var GetDatasets = func(ctx context.Context) []string {
 	datasets := ctx.Value("datasets")
 	if datasets == nil {
 		log.Debug("request datasets context is empty")
+
 		return []string{}
 	}
 	log.Debugf("returning %v from request context", datasets)
+
 	return datasets.([]string)
 }

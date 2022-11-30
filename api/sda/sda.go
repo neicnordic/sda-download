@@ -26,6 +26,7 @@ var Backend storage.Backend
 
 func sanitizeString(str string) string {
 	var pattern = regexp.MustCompile(`(https?://[^\s/$.?#].[^\s]+|[A-Za-z0-9-_:.]+)`)
+
 	return pattern.ReplaceAllString(str, "[identifier]: $1")
 }
 
@@ -49,9 +50,11 @@ func find(datasetID string, datasets []string) bool {
 	for _, dataset := range datasets {
 		if datasetID == dataset {
 			found = true
+
 			break
 		}
 	}
+
 	return found
 }
 
@@ -70,6 +73,7 @@ var getFiles = func(datasetID string, ctx context.Context) ([]*database.FileInfo
 		if err != nil {
 			// something went wrong with querying or parsing rows
 			log.Errorf("database query failed for dataset %s, reason %s", sanitizeString(datasetID), err)
+
 			return nil, 500, errors.New("database error")
 		}
 
@@ -107,6 +111,7 @@ func Files(w http.ResponseWriter, r *http.Request) {
 	files, code, err := getFiles(dataset, r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), code)
+
 		return
 	}
 
@@ -127,6 +132,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	dataset, err := database.CheckFilePermission(fileID)
 	if err != nil {
 		http.Error(w, "file not found", 404)
+
 		return
 	}
 
@@ -138,12 +144,14 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	for d := range datasets {
 		if datasets[d] == dataset {
 			permission = true
+
 			break
 		}
 	}
 	if !permission {
 		log.Debugf("user requested to view file, but does not have permissions for dataset %s", dataset)
 		http.Error(w, "unauthorised", 401)
+
 		return
 	}
 
@@ -151,6 +159,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	fileDetails, err := database.GetFile(fileID)
 	if err != nil {
 		http.Error(w, "database error", 500)
+
 		return
 	}
 
@@ -159,6 +168,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("could not find archive file %s, %s", fileDetails.ArchivePath, err)
 		http.Error(w, "archive error", 500)
+
 		return
 	}
 
@@ -167,6 +177,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("parsing of query param coordinates to crypt4gh format failed, reason: %v", err)
 		http.Error(w, err.Error(), 400)
+
 		return
 	}
 
@@ -175,6 +186,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("could not prepare file for streaming, %s", err)
 		http.Error(w, "file stream error", 500)
+
 		return
 	}
 
@@ -191,9 +203,11 @@ var stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.Da
 	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
 	if err != nil {
 		log.Errorf("failed to create Crypt4GH stream reader, %v", err)
+
 		return nil, err
 	}
 	log.Debugf("file stream for %s constructed", file)
+
 	return c4ghr, nil
 }
 
@@ -212,15 +226,18 @@ var parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket,
 		start, err := strconv.ParseUint(qStart, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert start coordinate %d to integer, %s", start, err)
+
 			return nil, errors.New("startCoordinate must be an integer")
 		}
 		end, err := strconv.ParseUint(qEnd, 10, 64)
 		if err != nil {
 			log.Errorf("failed to convert end coordinate %d to integer, %s", end, err)
+
 			return nil, errors.New("endCoordinate must be an integer")
 		}
 		if end < start {
 			log.Errorf("endCoordinate=%d must be greater than startCoordinate=%d", end, start)
+
 			return nil, errors.New("endCoordinate must be greater than startCoordinate")
 		}
 		// API query params take a coordinate range to read "start...end"
@@ -246,6 +263,7 @@ var sendStream = func(w http.ResponseWriter, file io.Reader) {
 	if err != nil {
 		log.Errorf("file streaming failed, reason: %v", err)
 		http.Error(w, "file streaming failed", 500)
+
 		return
 	}
 

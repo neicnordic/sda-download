@@ -19,7 +19,7 @@ func init() {
 	// Load configuration
 	conf, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("configuration loading failed, reason: %v", err)
+		log.Panicf("configuration loading failed, reason: %v", err)
 		panic(err)
 	}
 	config.Config = *conf
@@ -27,7 +27,7 @@ func init() {
 	// Connect to database
 	db, err := database.NewDB(conf.DB)
 	if err != nil {
-		log.Fatalf("database connection failed, reason: %v", err)
+		log.Panicf("database connection failed, reason: %v", err)
 		panic(err)
 	}
 	defer db.Close()
@@ -36,7 +36,7 @@ func init() {
 	// Initialise HTTP client for making requests
 	client, err := request.InitialiseClient()
 	if err != nil {
-		log.Fatalf("http client init failed, reason: %v", err)
+		log.Panicf("http client init failed, reason: %v", err)
 		panic(err)
 	}
 	request.Client = client
@@ -45,7 +45,7 @@ func init() {
 	details, err := auth.GetOIDCDetails(conf.OIDC.ConfigurationURL)
 	log.Info("retrieving OIDC configuration")
 	if err != nil {
-		log.Fatalf("oidc init failed, reason: %v", err)
+		log.Panicf("oidc init failed, reason: %v", err)
 		panic(err)
 	}
 	auth.Details = details
@@ -54,13 +54,13 @@ func init() {
 	// Initialise session cache
 	sessionCache, err := session.InitialiseSessionCache()
 	if err != nil {
-		log.Fatalf("session cache init failed, reason: %v", err)
+		log.Panicf("session cache init failed, reason: %v", err)
 	}
 	session.SessionCache = sessionCache
 
 	backend, err := storage.NewBackend(conf.Archive)
 	if err != nil {
-		log.Fatalf("Error initiating storage backend, reason: %v", err)
+		log.Panicf("Error initiating storage backend, reason: %v", err)
 	}
 	sda.Backend = backend
 }

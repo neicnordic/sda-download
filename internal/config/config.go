@@ -307,6 +307,7 @@ func (c *ConfigMap) appConfig() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -357,6 +358,7 @@ func (c *ConfigMap) configDatabase() error {
 		db.CACert = viper.GetString("db.cacert")
 	}
 	c.DB = db
+
 	return nil
 }
 
@@ -366,6 +368,7 @@ func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Errorf("Error when opening file with issuers, reason: %v", err)
+
 		return nil, err
 	}
 
@@ -374,6 +377,7 @@ func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
 	err = json.Unmarshal(content, &payload)
 	if err != nil {
 		log.Errorf("Error during Unmarshal, reason: %v", err)
+
 		return nil, err
 	}
 
@@ -390,6 +394,7 @@ func constructWhitelist(obj []TrustedISS) *jwk.MapWhitelist {
 			wl.Add(value.JKU)
 		}
 	}
+
 	return wl
 }
 
@@ -412,5 +417,6 @@ func GetC4GHKey() (*[32]byte, error) {
 
 	keyFile.Close()
 	log.Info("crypt4gh private key loaded")
+
 	return &key, nil
 }

@@ -95,6 +95,7 @@ func TestMakeRequest_Fail_StatusCode(t *testing.T) {
 			Method: "GET",
 			URL:    u,
 		}
+
 		return r, nil
 	}
 
@@ -142,6 +143,7 @@ func TestMakeRequest_Success(t *testing.T) {
 			Method: "GET",
 			URL:    u,
 		}
+
 		return r, nil
 	}
 

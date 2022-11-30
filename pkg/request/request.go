@@ -24,6 +24,7 @@ func InitialiseClient() (*http.Client, error) {
 		caCert, err := os.ReadFile(config.Config.OIDC.CACert)
 		if err != nil {
 			log.Errorf("Reading certificate file failed: %v", err)
+
 			return nil, err
 		}
 		log.Debug("Added certificate")
@@ -43,6 +44,7 @@ func InitialiseClient() (*http.Client, error) {
 	client := &http.Client{
 		Timeout:   20 * time.Second,
 		Transport: t}
+
 	return client, nil
 }
 
@@ -86,6 +88,7 @@ var MakeRequest = func(method string, url string, headers map[string]string, bod
 	// Check StatusCode in case an error has happened downstream and not catched by the `err!=nil`
 	if response.StatusCode >= 400 {
 		err = errors.New(strconv.Itoa(response.StatusCode))
+
 		return nil, err
 	}
 
