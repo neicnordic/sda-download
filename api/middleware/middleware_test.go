@@ -169,6 +169,8 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 		return "key"
 	}
 
+	k := datasetsKey("datasets")
+
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "https://testing.fi", nil)
@@ -176,7 +178,7 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 	// Now that we are modifying the request context, we need to place the context test inside the handler
 	expectedDatasets := []string{"dataset1", "dataset2"}
 	testEndpointWithContextData := func(w http.ResponseWriter, r *http.Request) {
-		datasets := r.Context().Value("datasets").([]string)
+		datasets := r.Context().Value(k).([]string)
 		// string arrays can't be compared
 		if strings.Join(datasets, "") == strings.Join(expectedDatasets, "")+"\n" {
 			t.Errorf("TestTokenMiddleware_Success_NoCache failed, got %s expected %s", datasets, expectedDatasets)
@@ -231,10 +233,12 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 		Value: "key",
 	})
 
+	k := datasetsKey("datasets")
+
 	// Now that we are modifying the request context, we need to place the context test inside the handler
 	expectedDatasets := []string{"dataset1", "dataset2"}
 	testEndpointWithContextData := func(w http.ResponseWriter, r *http.Request) {
-		datasets := r.Context().Value("datasets").([]string)
+		datasets := r.Context().Value(k).([]string)
 		// string arrays can't be compared
 		if strings.Join(datasets, "") == strings.Join(expectedDatasets, "")+"\n" {
 			t.Errorf("TestTokenMiddleware_Success_FromCache failed, got %s expected %s", datasets, expectedDatasets)
@@ -275,7 +279,7 @@ func TestStoreDatasets(t *testing.T) {
 	modifiedContext := storeDatasets(r.Context(), datasets)
 
 	// Verify that context has new data
-	storedDatasets := modifiedContext.Value("datasets").([]string)
+	storedDatasets := modifiedContext.Value(datasetsKey("datasets")).([]string)
 	// string arrays can't be compared
 	if strings.Join(datasets, "") != strings.Join(storedDatasets, "") {
 		t.Errorf("TestStoreDatasets failed, got %s, expected %s", storedDatasets, datasets)
