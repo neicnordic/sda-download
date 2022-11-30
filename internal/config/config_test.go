@@ -72,7 +72,7 @@ func (suite *TestSuite) TestAppConfig() {
 
 	viper.Set("db.sslmode", "disable")
 
-	c := &ConfigMap{}
+	c := &Map{}
 	err := c.appConfig()
 	assert.Error(suite.T(), err, "Error expected")
 	assert.Nil(suite.T(), c.App.Crypt4GHKey)
@@ -80,7 +80,7 @@ func (suite *TestSuite) TestAppConfig() {
 	// Generate a Crypt4GH private key, so that ConfigMap.appConfig() doesn't fail
 	generateKeyForTest(suite)
 
-	c = &ConfigMap{}
+	c = &Map{}
 	err = c.appConfig()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test", c.App.Host)
@@ -93,7 +93,7 @@ func (suite *TestSuite) TestArchiveConfig() {
 	viper.Set("archive.type", POSIX)
 	viper.Set("archive.location", "/test")
 
-	c := &ConfigMap{}
+	c := &Map{}
 	c.configArchive()
 	assert.Equal(suite.T(), "/test", c.Archive.Posix.Location)
 
@@ -108,7 +108,7 @@ func (suite *TestSuite) TestSessionConfig() {
 
 	viper.Set("db.sslmode", "disable")
 
-	c := &ConfigMap{}
+	c := &Map{}
 	c.sessionConfig()
 	assert.Equal(suite.T(), time.Duration(3600*time.Second), c.Session.Expiration)
 	assert.Equal(suite.T(), "test", c.Session.Domain)
@@ -121,13 +121,13 @@ func (suite *TestSuite) TestDatabaseConfig() {
 
 	// Test error on missing SSL vars
 	viper.Set("db.sslmode", "verify-full")
-	c := &ConfigMap{}
+	c := &Map{}
 	err := c.configDatabase()
 	assert.Error(suite.T(), err, "Error expected")
 
 	// Test no error on SSL disabled
 	viper.Set("db.sslmode", "disable")
-	c = &ConfigMap{}
+	c = &Map{}
 	err = c.configDatabase()
 	assert.NoError(suite.T(), err)
 
@@ -142,7 +142,7 @@ func (suite *TestSuite) TestDatabaseConfig() {
 	viper.Set("db.clientkey", "test")
 	viper.Set("db.sslmode", "verify-full")
 
-	c = &ConfigMap{}
+	c = &Map{}
 	err = c.configDatabase()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test", c.DB.Host)
@@ -160,12 +160,12 @@ func (suite *TestSuite) TestOIDC() {
 
 	// Test wrong file
 	viper.Set("oidc.trusted.iss", "../../iss.json")
-	c := &ConfigMap{}
+	c := &Map{}
 	err := c.configureOIDC()
 	assert.Error(suite.T(), err, "Error expected")
 
 	viper.Set("oidc.trusted.iss", "../../dev_utils/iss.json")
-	c = &ConfigMap{}
+	c = &Map{}
 	err = c.configureOIDC()
 	assert.NoError(suite.T(), err)
 
@@ -177,7 +177,7 @@ func (suite *TestSuite) TestOIDC() {
 	trustedList := []TrustedISS([]TrustedISS{{ISS: "https://demo.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}, {ISS: "https://demo1.example", JKU: "https://mockauth:8000/idp/profile/oidc/keyset"}})
 
 	whitelist := jwk.NewMapWhitelist().Add("https://mockauth:8000/idp/profile/oidc/keyset")
-	c = &ConfigMap{}
+	c = &Map{}
 	err = c.configureOIDC()
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "test", c.OIDC.ConfigurationURL)
