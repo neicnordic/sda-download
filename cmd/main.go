@@ -20,7 +20,6 @@ func init() {
 	conf, err := config.NewConfig()
 	if err != nil {
 		log.Panicf("configuration loading failed, reason: %v", err)
-		panic(err)
 	}
 	config.Config = *conf
 
@@ -28,7 +27,6 @@ func init() {
 	db, err := database.NewDB(conf.DB)
 	if err != nil {
 		log.Panicf("database connection failed, reason: %v", err)
-		panic(err)
 	}
 	defer db.Close()
 	database.DB = db
@@ -37,7 +35,6 @@ func init() {
 	client, err := request.InitialiseClient()
 	if err != nil {
 		log.Panicf("http client init failed, reason: %v", err)
-		panic(err)
 	}
 	request.Client = client
 
@@ -46,7 +43,6 @@ func init() {
 	log.Info("retrieving OIDC configuration")
 	if err != nil {
 		log.Panicf("oidc init failed, reason: %v", err)
-		panic(err)
 	}
 	auth.Details = details
 	log.Info("OIDC configuration retrieved")
