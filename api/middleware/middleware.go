@@ -10,7 +10,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type datasetsKey string
+type stringVariable string
+
+// as specified in docs: https://pkg.go.dev/context#WithValue
+var datasetsKey = stringVariable("datasets")
 
 // TokenMiddleware performs access token verification and validation
 // JWTs are verified and validated by the app, opaque tokens are sent to AAI for verification
@@ -87,16 +90,15 @@ func TokenMiddleware(nextHandler http.Handler) http.Handler {
 // storeDatasets stores the dataset list to the request context
 func storeDatasets(ctx context.Context, datasets []string) context.Context {
 	log.Debugf("storing %v datasets to request context", datasets)
-	// as specified in docs: https://pkg.go.dev/context#WithValue
-	k := datasetsKey("datasets")
-	ctx = context.WithValue(ctx, k, datasets)
+
+	ctx = context.WithValue(ctx, datasetsKey, datasets)
 
 	return ctx
 }
 
 // GetDatasets extracts the dataset list from the request context
 var GetDatasets = func(ctx context.Context) []string {
-	datasets := ctx.Value(datasetsKey("datasets"))
+	datasets := ctx.Value(datasetsKey)
 	if datasets == nil {
 		log.Debug("request datasets context is empty")
 
