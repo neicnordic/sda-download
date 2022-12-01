@@ -35,16 +35,19 @@ func GetOIDCDetails(url string) (OIDCDetails, error) {
 	response, err := request.MakeRequest("GET", url, nil, nil)
 	if err != nil {
 		log.Errorf("request failed, %s", err)
+
 		return u, err
 	}
 	// Parse response
 	err = json.NewDecoder(response.Body).Decode(&u)
 	if err != nil {
 		log.Errorf("failed to parse JSON response, %s", err)
+
 		return u, err
 	}
 	defer response.Body.Close()
 	log.Debugf("received OIDC config %s from %s", u, url)
+
 	return u, nil
 }
 
@@ -60,6 +63,7 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 	keyset, err := jwk.Fetch(ctx, o.JWK, jwk.WithHTTPClient(request.Client))
 	if err != nil {
 		log.Errorf("failed to request JWK set from %s, %s", o.JWK, err)
+
 		return nil, err
 	}
 	key, valid := keyset.Get(0)
@@ -75,11 +79,13 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 		verifiedToken, err = jwt.Parse([]byte(token), jwt.WithVerify(jwa.RS256, key), jwt.WithHTTPClient(request.Client))
 		if err != nil {
 			log.Errorf("failed to verify token as RSA256 signature of token %s, %s", token, err)
+
 			return nil, err
 		}
 	}
 	log.Debug(verifiedToken)
 	log.Debug("JWT signature verified")
+
 	return verifiedToken, nil
 }
 
@@ -88,6 +94,7 @@ var GetToken = func(header string) (string, int, error) {
 	log.Debug("parsing access token from header")
 	if len(header) == 0 {
 		log.Debug("authorization check failed")
+
 		return "", 401, errors.New("access token must be provided")
 	}
 
@@ -95,6 +102,7 @@ var GetToken = func(header string) (string, int, error) {
 	headerParts := strings.Split(header, " ")
 	if headerParts[0] != "Bearer" {
 		log.Debug("authorization check failed")
+
 		return "", 400, errors.New("authorization scheme must be bearer")
 	}
 
@@ -104,9 +112,11 @@ var GetToken = func(header string) (string, int, error) {
 		token = headerParts[1]
 	} else {
 		log.Debug("authorization check failed")
+
 		return "", 400, errors.New("token string is missing from authorization header")
 	}
 	log.Debug("access token found")
+
 	return token, 0, nil
 }
 
@@ -135,6 +145,7 @@ var GetVisas = func(o OIDCDetails, token string) (*Visas, error) {
 	response, err := request.MakeRequest("GET", o.Userinfo, headers, nil)
 	if err != nil {
 		log.Errorf("request failed, %s", err)
+
 		return nil, err
 	}
 	// Parse response
@@ -142,9 +153,11 @@ var GetVisas = func(o OIDCDetails, token string) (*Visas, error) {
 	err = json.NewDecoder(response.Body).Decode(&v)
 	if err != nil {
 		log.Errorf("failed to parse JSON response, %s", err)
+
 		return nil, err
 	}
 	log.Debug("visas received")
+
 	return &v, nil
 }
 
@@ -171,6 +184,7 @@ var GetPermissions = func(visas Visas) []string {
 	}
 
 	log.Debugf("matched datasets: %s", datasets)
+
 	return datasets
 }
 
@@ -181,6 +195,7 @@ func checkVisaType(visa string, visaType string) bool {
 	unknownToken, err := jwt.Parse([]byte(visa))
 	if err != nil {
 		log.Errorf("failed to parse visa, %s", err)
+
 		return false
 	}
 	unknownTokenVisaClaim := unknownToken.PrivateClaims()["ga4gh_visa_v1"]
@@ -188,15 +203,18 @@ func checkVisaType(visa string, visaType string) bool {
 	unknownTokenVisaClaimJSON, err := json.Marshal(unknownTokenVisaClaim)
 	if err != nil {
 		log.Errorf("failed to parse unknown visa claim: %s to JSON, with error: %s", unknownTokenVisaClaim, err)
+
 		return false
 	}
 	err = json.Unmarshal(unknownTokenVisaClaimJSON, &unknownTokenVisa)
 	if err != nil {
 		log.Errorf("failed to parse unknown visa claim: %s to JSON, with error: %s", unknownTokenVisaClaim, err)
+
 		return false
 	}
 	if unknownTokenVisa.Type != visaType {
 		log.Debugf("visa is not of type: %s, skip", visaType)
+
 		return false
 	}
 	log.Debug("visa type check passed")
@@ -214,12 +232,14 @@ func validateVisa(visa string) (jwt.Token, bool) {
 	header, err := jws.Parse([]byte(visa))
 	if err != nil {
 		log.Errorf("failed to parse visa header, %s", err)
+
 		return nil, false
 	}
 	// Extract payload from header.payload.signature
 	payload, err := jwt.Parse([]byte(visa))
 	if err != nil {
 		log.Errorf("failed to parse visa header, %s", err)
+
 		return nil, false
 	}
 	// Parse the jku key from header
@@ -242,12 +262,14 @@ func validateVisa(visa string) (jwt.Token, bool) {
 		verifiedVisa, err = jwt.Parse([]byte(visa), jwt.InferAlgorithmFromKey(true), jwt.WithVerifyAuto(true), jwt.WithFetchWhitelist(wl), jwt.WithHTTPClient(request.Client))
 		if err != nil {
 			log.Errorf("failed to verify token signature of token %s, %s", visa, err)
+
 			return nil, false
 		}
 	} else {
 		verifiedVisa, err = VerifyJWT(o, visa)
 		if err != nil {
 			log.Errorf("failed to verify token signature of token %s, %s", visa, err)
+
 			return nil, false
 		}
 	}
@@ -255,6 +277,7 @@ func validateVisa(visa string) (jwt.Token, bool) {
 	// Validate visa claims, exp, iat, nbf
 	if err := jwt.Validate(verifiedVisa); err != nil {
 		log.Error("failed to validate visa")
+
 		return nil, false
 	}
 	log.Debug("visa validated")
@@ -268,16 +291,19 @@ func getDatasets(parsedVisa jwt.Token, datasets []string) []string {
 	visaClaimJSON, err := json.Marshal(visaClaim)
 	if err != nil {
 		log.Errorf("failed to parse visa claim to JSON, %s, %s", err, visaClaim)
+
 		return datasets
 	}
 	err = json.Unmarshal(visaClaimJSON, &visa)
 	if err != nil {
 		log.Errorf("failed to parse visa claim JSON into struct, %s, %s", err, visaClaimJSON)
+
 		return datasets
 	}
 	exists, err := database.CheckDataset(visa.Dataset)
 	if err != nil {
 		log.Debugf("visa contained dataset %s which doesn't exist in this instance, skip", visa.Dataset)
+
 		return datasets
 	}
 	if exists {
@@ -287,6 +313,7 @@ func getDatasets(parsedVisa jwt.Token, datasets []string) []string {
 		for i := range datasets {
 			if datasets[i] == visa.Dataset {
 				log.Debugf("found a duplicate: dataset %s is already found, skip", visa.Dataset)
+
 				return datasets
 			}
 		}
@@ -309,6 +336,7 @@ func validateTrustedIss(obj []config.TrustedISS, issuerValue string, jkuValue st
 				return true
 			}
 		}
+
 		return false
 	}
 

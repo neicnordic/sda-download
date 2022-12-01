@@ -59,6 +59,7 @@ func TestGetOIDCDetails_Fail_JSONDecode(t *testing.T) {
 			// Response headers
 			Header: make(http.Header),
 		}
+
 		return response, nil
 	}
 
@@ -98,6 +99,7 @@ func TestGetOIDCDetails_Success(t *testing.T) {
 			// Response headers
 			Header: make(http.Header),
 		}
+
 		return response, nil
 	}
 
@@ -252,6 +254,7 @@ func TestGetVisas_Fail_JSONDecode(t *testing.T) {
 			// Response headers
 			Header: make(http.Header),
 		}
+
 		return response, nil
 	}
 
@@ -288,6 +291,7 @@ func TestGetVisas_Success(t *testing.T) {
 			// Response headers
 			Header: make(http.Header),
 		}
+
 		return response, nil
 	}
 

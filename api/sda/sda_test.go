@@ -173,6 +173,7 @@ func TestGetFiles_Success(t *testing.T) {
 		}
 		files := []*database.FileInfo{}
 		files = append(files, &fileInfo)
+
 		return files, nil
 	}
 
@@ -256,6 +257,7 @@ func TestFiles_Success(t *testing.T) {
 		}
 		files := []*database.FileInfo{}
 		files = append(files, &fileInfo)
+
 		return files, 200, nil
 	}
 
@@ -534,6 +536,7 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 			ArchiveSize: 0,
 			Header:      []byte{},
 		}
+
 		return fileDetails, nil
 	}
 
@@ -589,6 +592,7 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 			ArchiveSize: 0,
 			Header:      []byte{},
 		}
+
 		return fileDetails, nil
 	}
 	parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {
@@ -649,6 +653,7 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 			ArchiveSize: 0,
 			Header:      []byte{},
 		}
+
 		return fileDetails, nil
 	}
 	parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {
@@ -714,6 +719,7 @@ func TestDownload_Success(t *testing.T) {
 			ArchiveSize: 0,
 			Header:      []byte{},
 		}
+
 		return fileDetails, nil
 	}
 	parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {

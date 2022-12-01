@@ -41,9 +41,11 @@ func InitialiseSessionCache() (*ristretto.Cache, error) {
 	)
 	if err != nil {
 		log.Errorf("failed to create session cache, reason=%v", err)
+
 		return nil, err
 	}
 	log.Debug("session cache created")
+
 	return sessionCache, nil
 }
 
@@ -58,6 +60,7 @@ var Get = func(key string) ([]string, bool) {
 		cachedDatasets = nil
 	}
 	log.Debugf("cache response, exists=%t, datasets=%s", exists, cachedDatasets)
+
 	return cachedDatasets, exists
 }
 
@@ -90,5 +93,6 @@ var NewSessionKey = func() string {
 	}
 
 	log.Debug("new session key generated")
+
 	return sessionKey
 }

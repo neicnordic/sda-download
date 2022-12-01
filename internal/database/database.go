@@ -53,6 +53,7 @@ var logFatalf = log.Fatalf
 
 func sanitizeString(str string) string {
 	var pattern = regexp.MustCompile(`([A-Za-z0-9-_:.]+)`)
+
 	return pattern.ReplaceAllString(str, "[identifier]: $1")
 }
 
@@ -64,15 +65,18 @@ func NewDB(config config.DatabaseConfig) (*SQLdb, error) {
 	db, err := sqlOpen("postgres", connInfo)
 	if err != nil {
 		log.Errorf("failed to connect to database, %s", err)
+
 		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
 		log.Errorf("could not get response from database, %s", err)
+
 		return nil, err
 	}
 
 	log.Debug("database connection formed")
+
 	return &SQLdb{DB: db, ConnInfo: connInfo}, nil
 }
 
@@ -131,10 +135,13 @@ var GetFiles = func(datasetID string) ([]*FileInfo, error) {
 		r, err = DB.getFiles(datasetID)
 		if err != nil {
 			count++
+
 			continue
 		}
+
 		break
 	}
+
 	return r, err
 }
 
@@ -153,6 +160,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 	rows, err := db.Query(query, datasetID)
 	if err != nil {
 		log.Error(err)
+
 		return nil, err
 	}
 	defer rows.Close()
@@ -166,6 +174,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 			&fi.DecryptedFileSize, &fi.DecryptedFileChecksum, &fi.DecryptedFileChecksumType, &fi.Status)
 		if err != nil {
 			log.Error(err)
+
 			return nil, err
 		}
 
@@ -198,10 +207,13 @@ var CheckDataset = func(dataset string) (bool, error) {
 		r, err = DB.checkDataset(dataset)
 		if err != nil {
 			count++
+
 			continue
 		}
+
 		break
 	}
+
 	return r, err
 }
 
@@ -232,10 +244,13 @@ var CheckFilePermission = func(fileID string) (string, error) {
 		r, err = DB.checkFilePermission(fileID)
 		if err != nil {
 			count++
+
 			continue
 		}
+
 		break
 	}
+
 	return r, err
 }
 
@@ -251,6 +266,7 @@ func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 	var datasetName string
 	if err := db.QueryRow(query, fileID).Scan(&datasetName); err != nil {
 		log.Errorf("requested file with %s does not exist", sanitizeString(fileID))
+
 		return "", err
 	}
 
@@ -275,10 +291,13 @@ var GetFile = func(fileID string) (*FileDownload, error) {
 		r, err = DB.getFile(fileID)
 		if err != nil {
 			count++
+
 			continue
 		}
+
 		break
 	}
+
 	return r, err
 }
 
@@ -296,12 +315,14 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString)
 	if err != nil {
 		log.Errorf("could not retrieve details for file %s, reason %s", sanitizeString(fileID), err)
+
 		return nil, err
 	}
 
 	fd.Header, err = hex.DecodeString(hexString)
 	if err != nil {
 		log.Errorf("could not decode file header for file %s, reason %s", sanitizeString(fileID), err)
+
 		return nil, err
 	}
 

@@ -189,6 +189,7 @@ func TestClose(t *testing.T) {
 
 		mock.ExpectClose()
 		testDb.Close()
+
 		return nil
 	})
 

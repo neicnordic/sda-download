@@ -20,10 +20,10 @@ const POSIX = "posix"
 const S3 = "s3"
 
 // Config is a global configuration value store
-var Config ConfigMap
+var Config Map
 
 // ConfigMap stores all different configs
-type ConfigMap struct {
+type Map struct {
 	App     AppConfig
 	Session SessionConfig
 	DB      DatabaseConfig
@@ -130,7 +130,7 @@ type DatabaseConfig struct {
 }
 
 // NewConfig populates ConfigMap with data
-func NewConfig() (*ConfigMap, error) {
+func NewConfig() (*Map, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
@@ -187,7 +187,7 @@ func NewConfig() (*ConfigMap, error) {
 		log.Printf("Setting log level to '%s'", stringLevel)
 	}
 
-	c := &ConfigMap{}
+	c := &Map{}
 	c.applyDefaults()
 	c.sessionConfig()
 	c.configArchive()
@@ -210,7 +210,7 @@ func NewConfig() (*ConfigMap, error) {
 
 // applyDefaults set default values for web server and session
 // default to host 0.0.0.0 as it will the main way we deploy this application
-func (c *ConfigMap) applyDefaults() {
+func (c *Map) applyDefaults() {
 	viper.SetDefault("app.host", "0.0.0.0")
 	viper.SetDefault("app.port", 8080)
 	viper.SetDefault("session.expiration", -1)
@@ -255,7 +255,7 @@ func configS3Storage(prefix string) storage.S3Conf {
 	return s3
 }
 
-func (c *ConfigMap) configureOIDC() error {
+func (c *Map) configureOIDC() error {
 	c.OIDC.ConfigurationURL = viper.GetString("oidc.configuration.url")
 	c.OIDC.Whitelist = nil
 	c.OIDC.TrustedList = nil
@@ -276,7 +276,7 @@ func (c *ConfigMap) configureOIDC() error {
 
 // configArchive provides configuration for the archive storage
 // we default to POSIX unless S3 specified
-func (c *ConfigMap) configArchive() {
+func (c *Map) configArchive() {
 	if viper.GetString("archive.type") == S3 {
 		c.Archive.Type = S3
 		c.Archive.S3 = configS3Storage("archive")
@@ -287,7 +287,7 @@ func (c *ConfigMap) configArchive() {
 }
 
 // appConfig sets required settings
-func (c *ConfigMap) appConfig() error {
+func (c *Map) appConfig() error {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
 	c.App.ServerCert = viper.GetString("app.servercert")
@@ -295,11 +295,8 @@ func (c *ConfigMap) appConfig() error {
 
 	if c.App.Port != 443 && c.App.Port != 8080 {
 		c.App.Port = viper.GetInt("app.port")
-	} else {
-		if c.App.ServerCert != "" && c.App.ServerKey != "" {
-			c.App.Port = 443
-		}
-
+	} else if c.App.ServerCert != "" && c.App.ServerKey != "" {
+		c.App.Port = 443
 	}
 
 	var err error
@@ -307,11 +304,12 @@ func (c *ConfigMap) appConfig() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 // sessionConfig controls cookie settings and session cache
-func (c *ConfigMap) sessionConfig() {
+func (c *Map) sessionConfig() {
 	c.Session.Expiration = time.Duration(viper.GetInt("session.expiration")) * time.Second
 	c.Session.Domain = viper.GetString("session.domain")
 	c.Session.Secure = viper.GetBool("session.secure")
@@ -320,7 +318,7 @@ func (c *ConfigMap) sessionConfig() {
 }
 
 // configDatabase provides configuration for the database
-func (c *ConfigMap) configDatabase() error {
+func (c *Map) configDatabase() error {
 	db := DatabaseConfig{}
 
 	// defaults
@@ -357,6 +355,7 @@ func (c *ConfigMap) configDatabase() error {
 		db.CACert = viper.GetString("db.cacert")
 	}
 	c.DB = db
+
 	return nil
 }
 
@@ -366,6 +365,7 @@ func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Errorf("Error when opening file with issuers, reason: %v", err)
+
 		return nil, err
 	}
 
@@ -374,6 +374,7 @@ func readTrustedIssuers(filePath string) ([]TrustedISS, error) {
 	err = json.Unmarshal(content, &payload)
 	if err != nil {
 		log.Errorf("Error during Unmarshal, reason: %v", err)
+
 		return nil, err
 	}
 
@@ -390,6 +391,7 @@ func constructWhitelist(obj []TrustedISS) *jwk.MapWhitelist {
 			wl.Add(value.JKU)
 		}
 	}
+
 	return wl
 }
 
@@ -412,5 +414,6 @@ func GetC4GHKey() (*[32]byte, error) {
 
 	keyFile.Close()
 	log.Info("crypt4gh private key loaded")
+
 	return &key, nil
 }
