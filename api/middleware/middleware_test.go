@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"reflect"
 	"testing"
 
 	"github.com/neicnordic/sda-download/internal/config"
@@ -177,8 +177,7 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 	expectedDatasets := []string{"dataset1", "dataset2"}
 	testEndpointWithContextData := func(w http.ResponseWriter, r *http.Request) {
 		datasets := r.Context().Value(datasetsKey).([]string)
-		// string arrays can't be compared
-		if strings.Join(datasets, "") == strings.Join(expectedDatasets, "")+"\n" {
+		if !reflect.DeepEqual(datasets, expectedDatasets) {
 			t.Errorf("TestTokenMiddleware_Success_NoCache failed, got %s expected %s", datasets, expectedDatasets)
 		}
 	}
@@ -235,8 +234,7 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 	expectedDatasets := []string{"dataset1", "dataset2"}
 	testEndpointWithContextData := func(w http.ResponseWriter, r *http.Request) {
 		datasets := r.Context().Value(datasetsKey).([]string)
-		// string arrays can't be compared
-		if strings.Join(datasets, "") == strings.Join(expectedDatasets, "")+"\n" {
+		if !reflect.DeepEqual(datasets, expectedDatasets) {
 			t.Errorf("TestTokenMiddleware_Success_FromCache failed, got %s expected %s", datasets, expectedDatasets)
 		}
 	}
@@ -276,8 +274,7 @@ func TestStoreDatasets(t *testing.T) {
 
 	// Verify that context has new data
 	storedDatasets := modifiedContext.Value(datasetsKey).([]string)
-	// string arrays can't be compared
-	if strings.Join(datasets, "") != strings.Join(storedDatasets, "") {
+	if !reflect.DeepEqual(datasets, storedDatasets) {
 		t.Errorf("TestStoreDatasets failed, got %s, expected %s", storedDatasets, datasets)
 	}
 
@@ -295,8 +292,7 @@ func TestGetDatasets(t *testing.T) {
 
 	// Verify that context has new data
 	storedDatasets := GetDatasets(modifiedRequest.Context())
-	// string arrays can't be compared
-	if strings.Join(datasets, "") != strings.Join(storedDatasets, "") {
+	if !reflect.DeepEqual(datasets, storedDatasets) {
 		t.Errorf("TestStoreDatasets failed, got %s, expected %s", storedDatasets, datasets)
 	}
 
