@@ -13,7 +13,7 @@ services:
       interval: 5s
       timeout: 20s
       retries: 3
-    image: neicnordic/sda-db:v2.0.10
+    image: ghcr.io/neicnordic/sda-db:v2.0.10
     ports:
       - "5432:5432"
     volumes:
@@ -47,9 +47,10 @@ services:
     command: sda-download
     container_name: download
     depends_on:
-      - db
-      - s3
-      - mockauth
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
     environment:
       - ARCHIVE_URL=http://s3
       - ARCHIVE_TYPE=s3
@@ -71,7 +72,7 @@ services:
         pip install aiohttp cryptography Authlib
         python -u /mockoidc.py
     container_name: mockauth
-    image: python:3.8-slim
+    image: python:3.10-slim
     volumes:
       - ./mockoidc/mockoidc.py:/mockoidc.py
       - ./certs:/certs

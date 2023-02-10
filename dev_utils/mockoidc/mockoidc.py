@@ -32,9 +32,12 @@ def _set_ssl() -> Union[ssl.SSLContext, None]:
 def _generate_token() -> Tuple:
     """Generate RSA Key pair to be used to sign token and the JWT Token itself."""
     global HTTP_PROTOCOL
-    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
+    private_key = rsa.generate_private_key(
+        public_exponent=65537, key_size=2048, backend=default_backend()
+    )
     public_key = private_key.public_key().public_bytes(
-        encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
     )
     pem = private_key.private_bytes(
         encoding=serialization.Encoding.PEM,
@@ -139,10 +142,14 @@ def _generate_token() -> Tuple:
     visa_terms_encoded = jwt.encode(header, passport_terms, private_jwk).decode("utf-8")
 
     # visa that contains demo dataset
-    visa_dataset1_encoded = jwt.encode(header, passport_dataset1, private_jwk).decode("utf-8")
+    visa_dataset1_encoded = jwt.encode(header, passport_dataset1, private_jwk).decode(
+        "utf-8"
+    )
 
     # visa that contains demo dataset but issue that is not trusted
-    visa_dataset2_encoded = jwt.encode(header, passport_dataset2, private_jwk).decode("utf-8")
+    visa_dataset2_encoded = jwt.encode(header, passport_dataset2, private_jwk).decode(
+        "utf-8"
+    )
     return (
         public_jwk,
         trusted_token,
@@ -190,7 +197,15 @@ async def fixed_response(request: web.Request) -> web.Response:
             "A256GCMKW",
         ],
         "id_token_encryption_enc_values_supported": ["A128CBC-HS256"],
-        "id_token_signing_alg_values_supported": ["RS256", "RS384", "RS512", "HS256", "HS384", "HS512", "ES256"],
+        "id_token_signing_alg_values_supported": [
+            "RS256",
+            "RS384",
+            "RS512",
+            "HS256",
+            "HS384",
+            "HS512",
+            "ES256",
+        ],
         "userinfo_encryption_alg_values_supported": [
             "RSA1_5",
             "RSA-OAEP",
@@ -203,7 +218,15 @@ async def fixed_response(request: web.Request) -> web.Response:
             "A256GCMKW",
         ],
         "userinfo_encryption_enc_values_supported": ["A128CBC-HS256"],
-        "userinfo_signing_alg_values_supported": ["RS256", "RS384", "RS512", "HS256", "HS384", "HS512", "ES256"],
+        "userinfo_signing_alg_values_supported": [
+            "RS256",
+            "RS384",
+            "RS512",
+            "HS256",
+            "HS384",
+            "HS512",
+            "ES256",
+        ],
         "request_object_signing_alg_values_supported": [
             "none",
             "RS256",
