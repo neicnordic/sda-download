@@ -226,7 +226,7 @@ func TestCheckDataset(t *testing.T) {
 	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
 
 		expected := true
-		query := "SELECT DISTINCT dataset_stable_id FROM local_ega_ebi.filedataset WHERE dataset_stable_id = \\$1"
+		query := "SELECT DISTINCT dataset_id FROM local_ega_ebi.file_dataset WHERE dataset_id = \\$1"
 		mock.ExpectQuery(query).
 			WithArgs("dataset1").
 			WillReturnRows(sqlmock.NewRows([]string{"dataset_stable_id"}).AddRow("dataset1"))
