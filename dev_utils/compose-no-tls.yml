@@ -69,7 +69,7 @@ services:
       - -c
       - |
         pip install --upgrade pip
-        pip install aiohttp cryptography Authlib
+        pip install aiohttp Authlib
         python -u /mockoidc.py
     container_name: mockauth
     image: python:3.10-slim
