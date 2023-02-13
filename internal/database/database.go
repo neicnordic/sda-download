@@ -222,7 +222,7 @@ func (dbs *SQLdb) checkDataset(dataset string) (bool, error) {
 	dbs.checkAndReconnectIfNeeded()
 
 	db := dbs.DB
-	const query = "SELECT DISTINCT dataset_stable_id FROM local_ega_ebi.filedataset WHERE dataset_stable_id = $1"
+	const query = "SELECT DISTINCT dataset_id FROM local_ega_ebi.file_dataset WHERE dataset_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, dataset).Scan(&datasetName); err != nil {
