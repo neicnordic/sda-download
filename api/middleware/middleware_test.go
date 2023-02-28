@@ -222,6 +222,8 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 		return []string{"dataset1", "dataset2"}, true
 	}
 
+	config.Config.Session.Name = "sda_session_key"
+
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "https://testing.fi", nil)
