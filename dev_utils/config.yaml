@@ -60,4 +60,4 @@ oidc:
   configuration:
     url: "https://mockauth:8000/.well-known/openid-configuration"
   trusted:
-    iss: "/iss.json"
+    iss: "./dev_utils/iss.json"

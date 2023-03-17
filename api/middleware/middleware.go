@@ -35,11 +35,18 @@ func TokenMiddleware() gin.HandlerFunc {
 			log.Debug("no session found, create new session")
 
 			// Check that a token is provided
-			token, code, err := auth.GetToken(c.Request.Header.Get("Authorization"))
+			token, _, err := auth.GetToken(c.Request.Header.Get("Authorization"))
 			if err != nil {
-				c.String(code, err.Error())
 
-				return
+				log.Debug("no authorization token, checking x-amz-security-token")
+				var code int
+				token, code, err = auth.GetTokenFromS3(c.Request.Header.Get("X-Amz-Security-Token"))
+
+				if err != nil {
+					c.String(code, err.Error())
+
+					return
+				}
 			}
 
 			// Verify token by attempting to retrieve visas from AAI

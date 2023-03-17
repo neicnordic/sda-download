@@ -29,6 +29,7 @@ func Setup() *http.Server {
 	router.GET("/metadata/datasets", middleware.TokenMiddleware(), sda.Datasets)
 	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
 	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
+	router.GET("/s3/:dataset", middleware.TokenMiddleware(), sda.S3Download)
 	router.GET("/health", healthResponse)
 
 	// explicitly return 405 on POST requests

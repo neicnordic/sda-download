@@ -17,6 +17,7 @@ import (
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/storage"
+	"github.com/neicnordic/sda-download/pkg/auth"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -186,6 +187,92 @@ func Download(c *gin.Context) {
 	}
 
 	sendStream(c.Writer, fileStream)
+}
+
+func S3Download(c *gin.Context) {
+	log.Debugf("S3 request: %v", c.Request)
+
+	if strings.Contains(c.Request.URL.String(), "?delimiter") {
+		// List object request https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html
+		log.Debug("list objects request")
+
+		token, _, err := auth.GetTokenFromS3(c.Request.Header.Get("X-Amz-Security-Token"))
+		if err != nil {
+			log.Debug("failed to get token from header")
+			c.String(http.StatusUnauthorized, "bad token")
+
+			return
+		}
+
+		visas, err := auth.GetVisas(auth.Details, token)
+		if err != nil {
+			log.Debug("failed to validate token at AAI")
+			c.String(http.StatusUnauthorized, "bad token")
+
+			return
+		}
+		log.Debugf("Visas for user: %v", visas)
+
+		response := `<?xml version="1.0" encoding="UTF-8"?>
+		<ListBucketResult>
+		<Name>BucketName</Name>
+		<Prefix/>
+		<IsTruncated>false</IsTruncated>`
+
+		datasets := middleware.GetDatasets(c)
+		for _, dataset := range datasets {
+			response += `<Contents>
+			<Key>` + dataset + `</Key>
+			<LastModified>2009-10-12T17:50:30.000Z</LastModified>
+			<ETag>"fba9dede5f27731c9771645a39863328"</ETag>
+			<Size>434234</Size>
+			<StorageClass>STANDARD</StorageClass>
+			<Owner>
+				<ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
+				<DisplayName>mtd@amazon.com</DisplayName>
+			</Owner>
+		</Contents>`
+		}
+
+		response += `</ListBucketResult>`
+		log.Debugf("Context: %v", datasets)
+		// TODO: Loop through that the token gives access to
+		// Add the files in the Contents tag
+
+		c.Writer.Write([]byte(response))
+		/* w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+		<ListBucketResult>
+		<Name>BucketName</Name>
+		<Prefix/>
+		<IsTruncated>false</IsTruncated>
+		<Contents>
+			<Key>my-image.jpg</Key>
+			<LastModified>2009-10-12T17:50:30.000Z</LastModified>
+			<ETag>"fba9dede5f27731c9771645a39863328"</ETag>
+			<Size>434234</Size>
+			<StorageClass>STANDARD</StorageClass>
+			<Owner>
+				<ID>75aa57f09aa0c8caeab4f8c24e99d10f8e7faeebf76c078efc7c6caea54ba06a</ID>
+				<DisplayName>mtd@amazon.com</DisplayName>
+			</Owner>
+		</Contents>
+		</ListBucketResult>`)) */
+	} else if strings.Contains(c.Request.URL.String(), "?location") {
+		// Get bucket location request https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetBucketLocation.html
+		log.Debug("get bucket location request")
+
+		c.Writer.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+							<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
+							us-west-2
+							</LocationConstraint>`))
+	}
+
+}
+
+func S3DownloadAny(w http.ResponseWriter, r *http.Request) {
+	log.Debugf("ANY s3 request: %v", r)
+
+	w.Write([]byte("good job"))
 }
 
 // stitchFile stitches the header and file body together for Crypt4GHReader

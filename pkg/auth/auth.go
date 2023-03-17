@@ -90,6 +90,20 @@ func VerifyJWT(o OIDCDetails, token string) (jwt.Token, error) {
 }
 
 // GetToken parses the token string from header
+var GetTokenFromS3 = func(header string) (string, int, error) {
+	log.Debug("parsing access token from header")
+	if len(header) == 0 {
+		log.Debug("authorization check failed")
+
+		return "", 401, errors.New("access token must be provided")
+	}
+
+	log.Debug("access token found")
+
+	return header, 0, nil
+}
+
+// GetToken parses the token string from header
 var GetToken = func(header string) (string, int, error) {
 	log.Debug("parsing access token from header")
 	if len(header) == 0 {
