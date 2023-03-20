@@ -82,7 +82,10 @@ var getFiles = func(datasetID string, ctx *gin.Context) ([]*database.FileInfo, i
 // Files serves a list of files belonging to a dataset
 func Files(c *gin.Context) {
 
+	// get dataset parameter, remove / prefix and /files suffix
 	dataset := c.Param("dataset")
+	dataset = strings.TrimPrefix(dataset, "/")
+	dataset = strings.TrimSuffix(dataset, "/files")
 
 	// Get optional dataset scheme
 	// A scheme can be delivered separately in a query parameter
