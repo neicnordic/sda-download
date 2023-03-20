@@ -27,8 +27,7 @@ func Setup() *http.Server {
 	router := gin.Default()
 
 	router.GET("/metadata/datasets", middleware.TokenMiddleware(), sda.Datasets)
-	router.POST("/metadata/datasets", func(c *gin.Context) { c.String(http.StatusMethodNotAllowed, "Method Not Allowed") })
-	router.GET("/metadata/datasets/:dataset/files", middleware.TokenMiddleware(), sda.Files)
+	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
 	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
 	router.GET("/health", healthResponse)
 
