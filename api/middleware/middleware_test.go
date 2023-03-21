@@ -274,3 +274,38 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 	session.Get = originalGetCache
 
 }
+
+func TestStoreDatasets(t *testing.T) {
+	// Get a request context for testing if data is saved
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// Store data to request context
+	datasets := []string{"dataset1", "dataset2"}
+	modifiedContext := storeDatasets(c, datasets)
+
+	// Verify that context has new data
+	storedDatasets := modifiedContext.Value(datasetsKey).([]string)
+	if !reflect.DeepEqual(datasets, storedDatasets) {
+		t.Errorf("TestStoreDatasets failed, got %s, expected %s", storedDatasets, datasets)
+	}
+
+}
+
+func TestGetDatasets(t *testing.T) {
+
+	// Get a request context for testing if data is saved
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// Store data to request context
+	datasets := []string{"dataset1", "dataset2"}
+	modifiedContext := storeDatasets(c, datasets)
+
+	// Verify that context has new data
+	storedDatasets := GetDatasets(modifiedContext)
+	if !reflect.DeepEqual(datasets, storedDatasets) {
+		t.Errorf("TestStoreDatasets failed, got %s, expected %s", storedDatasets, datasets)
+	}
+
+}
