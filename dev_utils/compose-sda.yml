@@ -72,8 +72,9 @@ services:
       "
     volumes:
       - ./certs/ca.pem:/etc/ssl/certs/public.crt
-    restart: always
+    restart: on-failure
   download:
+    profiles: [download]
     command: sda-download
     container_name: download
     depends_on:

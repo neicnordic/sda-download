@@ -259,12 +259,16 @@ func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 	dbs.checkAndReconnectIfNeeded()
 
 	log.Debugf("check permissions for file with %s", sanitizeString(fileID))
+	log.Debugf("file id: %v", fileID)
+	log.Debugf("file id: %v", sanitizeString(fileID))
+	log.Debugf("file id: %v", string(fileID))
 
 	db := dbs.DB
 	const query = "SELECT dataset_id FROM local_ega_ebi.file_dataset WHERE file_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, fileID).Scan(&datasetName); err != nil {
+		log.Print(err)
 		log.Errorf("requested file with %s does not exist", sanitizeString(fileID))
 
 		return "", err

@@ -265,6 +265,19 @@ func S3Download(c *gin.Context) {
 							<LocationConstraint xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
 							us-west-2
 							</LocationConstraint>`))
+	} else if strings.HasPrefix(c.Request.URL.String(), "/") {
+
+		c.Params = []gin.Param{
+			{
+				Key:   "fileid",
+				Value: strings.TrimPrefix(c.Param("dataset"), "/"),
+			},
+		}
+		log.Debug("went in the download case with param %v", c.Param("fileid"))
+		Download(c)
+
+	} else {
+		log.Debug(c.Request)
 	}
 
 }
@@ -298,6 +311,7 @@ var stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.Da
 var parseCoordinates = func(r *http.Request) (*headers.DataEditListHeaderPacket, error) {
 
 	coordinates := &headers.DataEditListHeaderPacket{}
+	log.Debug("coordinates: %v", coordinates)
 
 	// Get query params
 	qStart := r.URL.Query().Get("startCoordinate")

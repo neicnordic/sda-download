@@ -29,8 +29,11 @@ func Setup() *http.Server {
 	router.GET("/metadata/datasets", middleware.TokenMiddleware(), sda.Datasets)
 	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
 	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
-	router.GET("/s3/:dataset", middleware.TokenMiddleware(), sda.S3Download)
+	router.GET("/s3/*dataset", middleware.TokenMiddleware(), sda.S3Download)
 	router.GET("/health", healthResponse)
+	router.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	})
 
 	// explicitly return 405 on POST requests
 	router.POST("/metadata/datasets", func(c *gin.Context) { c.String(http.StatusMethodNotAllowed, "Method Not Allowed") })
