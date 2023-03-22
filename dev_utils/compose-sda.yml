@@ -73,8 +73,21 @@ services:
     volumes:
       - ./certs/ca.pem:/etc/ssl/certs/public.crt
     restart: on-failure
+  minio-client:
+    container_name: minio-client
+    image: minio/mc
+    depends_on:
+      - s3
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc config host add s3 https://s3:9000 access secretkey;
+      while true; do sleep 250; done
+      "
+    volumes:
+      - ./certs/ca.pem:/etc/ssl/certs/public.crt
   download:
-    profiles: [download]
+    #profiles: [download]
     command: sda-download
     container_name: download
     depends_on:
@@ -82,13 +95,15 @@ services:
       - db
       - mockauth
     env_file: ./env.download
-    image: neicnordic/sda-download:latest
+    #image: neicnordic/sda-download:latest
+    build:
+      context: ../
     volumes:
       - ./config.yaml:/config.yaml
       - ./:/dev_utils/
       - ./iss.json:/iss.json
       - certs:/dev_utils/certs
-      - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
+      - ./archive_data:/tmp
     mem_limit: 256m
     ports:
       - "8443:8443"
@@ -110,7 +125,36 @@ services:
     ports:
       - "8000:8000"
     restart: always
-
+  server:
+    image: ga4gh/htsget-refserver:latest
+    command:
+      - /usr/src/app/htsget-refserver
+      - -config
+      - /config/config.json
+    ports:
+      - 3000:3000
+    volumes:
+      #- certs:/etc/ssl/certs
+      - ./certs:/usr/local/share/ca-certificates
+      - ./config:/config
+      - ./logs:/logs
+  client:
+    image: python:3.11-slim
+    command:
+      - /bin/bash
+      - -c
+      - apt update; apt install -y curl;
+        if ! which htsget >/dev/null; then pip install htsget; fi;
+        while true; do sleep 250; done
+  samtools:
+    image: staphb/samtools
+    command:
+      - /bin/bash
+      - -c 
+      - while true; do sleep 250; done
+  netcat:
+    image: alpine:3.16
+    command: nc -lnvp 4000
 volumes:
   archive:
   certs:

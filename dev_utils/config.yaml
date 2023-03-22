@@ -9,7 +9,7 @@ log:
   format: "json"
 
 archive:
-  type: ""
+  type: "s3"
   # S3 backend
   url: "https://localhost"
   port: 9000

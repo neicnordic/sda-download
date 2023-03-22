@@ -279,9 +279,10 @@ func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 
 // FileDownload details are used for downloading a file
 type FileDownload struct {
-	ArchivePath string
-	ArchiveSize int
-	Header      []byte
+	ArchivePath   string
+	ArchiveSize   int
+	Header        []byte
+	DecryptedSize int
 }
 
 // GetFile retrieves the file header
@@ -312,11 +313,11 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	log.Debugf("check details for file with %s", sanitizeString(fileID))
 
 	db := dbs.DB
-	const query = "SELECT file_path, archive_file_size, header FROM local_ega_ebi.file WHERE file_id = $1"
+	const query = "SELECT file_path, archive_file_size, header, decrypted_file_size FROM local_ega_ebi.file WHERE file_id = $1"
 
 	fd := &FileDownload{}
 	var hexString string
-	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString)
+	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString, &fd.DecryptedSize)
 	if err != nil {
 		log.Errorf("could not retrieve details for file %s, reason %s", sanitizeString(fileID), err)
 

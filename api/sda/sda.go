@@ -177,16 +177,30 @@ func Download(c *gin.Context) {
 		return
 	}
 
-	// Stitch file and prepare it for streaming
-	fileStream, err := stitchFile(fileDetails.Header, file, coordinates)
-	if err != nil {
-		log.Errorf("could not prepare file for streaming, %s", err)
-		c.String(http.StatusInternalServerError, "file stream error")
+	c.Header("Content-Length", fmt.Sprint(fileDetails.DecryptedSize))
 
-		return
+	if c.Request.Method != http.MethodHead {
+		// Stitch file and prepare it for streaming
+		fileStream, err := stitchFile(fileDetails.Header, file, coordinates)
+		if err != nil {
+			log.Errorf("could not prepare file for streaming, %s", err)
+			c.String(http.StatusInternalServerError, "file stream error")
+
+			return
+		}
+		sendStream(c.Writer, fileStream)
+
+	} else {
+		c.Header("Content-Type", "application/octet-stream")
+		c.Header("Server", "AmazonS3")
+		/* s3 Content-Security-Policy: block-all-mixed-content
+		s3 Accept-Ranges: bytes
+		s3 Content-Length: 8820570
+		s3 Vary: Origin
+		X-Xss-Protection: 1; mode=block */
+
 	}
 
-	sendStream(c.Writer, fileStream)
 }
 
 func S3Download(c *gin.Context) {
@@ -353,7 +367,13 @@ var sendStream = func(w http.ResponseWriter, file io.Reader) {
 	log.Debug("begin data stream")
 
 	w.Header().Set("Content-Type", "application/octet-stream")
+	//var tmp bytes.Buffer
+	//n, err := tmp.ReadFrom(file)
+	//w.Header().Set("Content-Length", fmt.Sprint(1048605))
 	n, err := io.Copy(w, file)
+
+	//c.DataFromReader(http.StatusOK, 1000, "text", file, nil)
+	//c.Writer.Write(tmp.Bytes())
 	log.Debug("end data stream")
 
 	if err != nil {

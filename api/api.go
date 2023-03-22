@@ -30,6 +30,7 @@ func Setup() *http.Server {
 	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
 	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
 	router.GET("/s3/*dataset", middleware.TokenMiddleware(), sda.S3Download)
+	router.HEAD("/s3/*dataset", middleware.TokenMiddleware(), sda.S3Download)
 	router.GET("/health", healthResponse)
 	router.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
