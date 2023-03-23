@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// as specified in docs: https://pkg.go.dev/context#WithValue
 var datasetsKey = "datasets"
 
 // TokenMiddleware performs access token verification and validation
@@ -73,7 +72,7 @@ func TokenMiddleware() gin.HandlerFunc {
 		}
 
 		// Store dataset list to request context, for use in the endpoint handlers
-		storeDatasets(c, datasets)
+		c = storeDatasets(c, datasets)
 
 		// Forward request to the next endpoint handler
 		c.Next()
