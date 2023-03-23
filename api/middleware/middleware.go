@@ -37,6 +37,7 @@ func TokenMiddleware() gin.HandlerFunc {
 			token, code, err := auth.GetToken(c.Request.Header.Get("Authorization"))
 			if err != nil {
 				c.String(code, err.Error())
+				c.AbortWithError(code, err)
 
 				return
 			}
@@ -46,6 +47,7 @@ func TokenMiddleware() gin.HandlerFunc {
 			if err != nil {
 				log.Debug("failed to validate token at AAI")
 				c.String(http.StatusUnauthorized, "bad token")
+				c.AbortWithError(code, err)
 
 				return
 			}
