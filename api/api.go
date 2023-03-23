@@ -26,13 +26,12 @@ func Setup() *http.Server {
 
 	router := gin.Default()
 
+	router.HandleMethodNotAllowed = true
+
 	router.GET("/metadata/datasets", middleware.TokenMiddleware(), sda.Datasets)
 	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
 	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
 	router.GET("/health", healthResponse)
-
-	// explicitly return 405 on POST requests
-	router.POST("/metadata/datasets", func(c *gin.Context) { c.String(http.StatusMethodNotAllowed, "Method Not Allowed") })
 
 	// Configure TLS settings
 	log.Info("(3/5) Configuring TLS")
