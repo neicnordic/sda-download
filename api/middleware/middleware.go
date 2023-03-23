@@ -30,14 +30,17 @@ func TokenMiddleware() gin.HandlerFunc {
 			datasets, exists = session.Get(sessionCookie)
 		}
 
-		if !exists {
+		if !exists { //nolint:nestif
 			log.Debug("no session found, create new session")
 
 			// Check that a token is provided
 			token, code, err := auth.GetToken(c.Request.Header.Get("Authorization"))
 			if err != nil {
 				c.String(code, err.Error())
-				c.AbortWithError(code, err)
+				err := c.AbortWithError(code, err)
+				if err != nil {
+					log.Errorf("Error: %v", err)
+				}
 
 				return
 			}
@@ -47,7 +50,10 @@ func TokenMiddleware() gin.HandlerFunc {
 			if err != nil {
 				log.Debug("failed to validate token at AAI")
 				c.String(http.StatusUnauthorized, "bad token")
-				c.AbortWithError(code, err)
+				err := c.AbortWithError(code, err)
+				if err != nil {
+					log.Errorf("Error: %v", err)
+				}
 
 				return
 			}

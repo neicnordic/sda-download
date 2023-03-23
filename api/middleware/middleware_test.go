@@ -20,7 +20,7 @@ const token string = "token"
 
 // testEndpoint mimics the endpoint handlers that perform business logic after passing the
 // authentication middleware. This handler is generic and can be used for all cases.
-func testEndpoint(c *gin.Context) {}
+func testEndpoint(_ *gin.Context) {}
 
 func TestTokenMiddleware_Fail_GetToken(t *testing.T) {
 
