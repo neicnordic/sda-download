@@ -74,7 +74,7 @@ func TestTokenMiddleware_Fail_GetVisas(t *testing.T) {
 		return token, 200, nil
 	}
 	auth.GetVisas = func(o auth.OIDCDetails, token string) (*auth.Visas, error) {
-		return nil, errors.New("bad token")
+		return nil, errors.New("get visas failed")
 	}
 
 	// Mock request and response holders
@@ -91,7 +91,7 @@ func TestTokenMiddleware_Fail_GetVisas(t *testing.T) {
 	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
 	expectedStatusCode := 401
-	expectedBody := []byte("bad token")
+	expectedBody := []byte("get visas failed")
 
 	if response.StatusCode != expectedStatusCode {
 		t.Errorf("TestTokenMiddleware_Fail_GetVisas failed, got %d expected %d", response.StatusCode, expectedStatusCode)

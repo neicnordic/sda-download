@@ -46,7 +46,7 @@ func TokenMiddleware() gin.HandlerFunc {
 			visas, err := auth.GetVisas(auth.Details, token)
 			if err != nil {
 				log.Debug("failed to validate token at AAI")
-				c.String(http.StatusUnauthorized, "bad token")
+				c.String(http.StatusUnauthorized, "get visas failed")
 				c.AbortWithStatus(code)
 
 				return
