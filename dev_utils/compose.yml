@@ -1,4 +1,3 @@
-version: "2.4"
 services:
   certfixer:
     command:
@@ -7,6 +6,7 @@ services:
       - |
         cp /origcerts/* /certs
         chown -R nobody.nobody /certs/*
+        chmod -R 644 /certs/*
         chmod -R og-rw /certs/*-key.pem
         chown -R 70.70 /certs/db*
         ls -la /certs/
@@ -16,11 +16,13 @@ services:
     volumes:
       - ./certs:/origcerts
       - certs:/certs
+
   db:
     command: server /data
     container_name: db
     depends_on:
-      - certfixer
+      certfixer:
+        condition: service_completed_successfully
     environment:
       - DB_LEGA_IN_PASSWORD=lega_in
       - DB_LEGA_OUT_PASSWORD=lega_out
@@ -34,12 +36,13 @@ services:
       interval: 5s
       timeout: 20s
       retries: 3
-    image: ghcr.io/neicnordic/sda-db:v2.0.10
+    image: ghcr.io/neicnordic/sda-db:v2.1.4
     ports:
       - "5432:5432"
     volumes:
       - /tmp/data:/data
       - certs:/var/lib/postgresql/tls/
+
   s3:
     command: server /data
     container_name: s3
@@ -58,30 +61,39 @@ services:
       - ./certs/ca.pem:/root/.minio/certs/CAs/public.crt
       - ./certs/s3.pem:/root/.minio/certs/public.crt
       - ./certs/s3-key.pem:/root/.minio/certs/private.key
+
   createbucket:
     container_name: buckets
     image: minio/mc
     depends_on:
-      - s3
+      s3:
+        condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      sleep 10;
       /usr/bin/mc config host add s3 https://s3:9000 access secretkey;
       /usr/bin/mc mb s3/archive;
       exit 0;
       "
     volumes:
       - ./certs/ca.pem:/etc/ssl/certs/public.crt
-    restart: always
+    restart: on-failure
+
   download:
     command: sda-download
     container_name: download
     depends_on:
-      - certfixer
-      - db
-      - mockauth
+      certfixer:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      s3:
+        condition: service_healthy
+      mockauth:
+        condition: service_started
     env_file: ./env.download
     image: neicnordic/sda-download:latest
+    build:
+      context: ..
     volumes:
       - ./config.yaml:/config.yaml
       - ./:/dev_utils/
@@ -92,6 +104,7 @@ services:
     ports:
       - "8443:8443"
     restart: always
+
   mockauth:
     command:
       - /bin/sh
