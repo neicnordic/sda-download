@@ -152,9 +152,30 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 	files := []*FileInfo{}
 	db := dbs.DB
 
-	const query = "SELECT a.file_id, dataset_id, display_file_name, file_name, file_size, " +
-		"decrypted_file_size, decrypted_file_checksum, decrypted_file_checksum_type, file_status from " +
-		"local_ega_ebi.file a, local_ega_ebi.file_dataset b WHERE dataset_id = $1 AND a.file_id=b.file_id;"
+	const query = `
+		SELECT f.stable_id AS file_id,
+			d.stable_id AS dataset_id,
+			reverse(split_part(reverse(f.submission_file_path::text), '/'::text, 1)) AS display_file_name,
+			f.archive_file_path AS file_name,
+			f.archive_file_size AS file_size,
+			f.decrypted_file_size,
+			dc.checksum AS decrypted_file_checksum,
+			dc.type AS decrypted_file_checksum_type,
+			e.event AS status
+		FROM sda.files f
+		JOIN sda.file_dataset fd ON fd.file_id = f.id
+		JOIN sda.datasets d ON fd.dataset_id = d.id
+		LEFT JOIN (SELECT file_id,
+					(ARRAY_AGG(event ORDER BY started_at DESC))[1] AS event
+				FROM sda.file_event_log
+				GROUP BY file_id) e
+		ON f.id = e.file_id
+		LEFT JOIN (SELECT file_id, checksum, type
+			FROM sda.checksums
+		WHERE source = 'UNENCRYPTED') dc
+		ON f.id = dc.file_id
+		WHERE d.stable_id = $1;
+	  	`
 
 	// nolint:rowserrcheck
 	rows, err := db.Query(query, datasetID)
@@ -222,7 +243,7 @@ func (dbs *SQLdb) checkDataset(dataset string) (bool, error) {
 	dbs.checkAndReconnectIfNeeded()
 
 	db := dbs.DB
-	const query = "SELECT DISTINCT dataset_id FROM local_ega_ebi.file_dataset WHERE dataset_id = $1"
+	const query = "SELECT stable_id FROM sda.datasets WHERE stable_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, dataset).Scan(&datasetName); err != nil {
@@ -261,7 +282,7 @@ func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 	log.Debugf("check permissions for file with %s", sanitizeString(fileID))
 
 	db := dbs.DB
-	const query = "SELECT dataset_id FROM local_ega_ebi.file_dataset WHERE file_id = $1"
+	const query = "SELECT d.stable_id FROM sda.file_dataset fd JOIN sda.datasets d ON fd.dataset_id = d.id JOIN sda.files f ON fd.file_id = f.id WHERE f.stable_id = $1"
 
 	var datasetName string
 	if err := db.QueryRow(query, fileID).Scan(&datasetName); err != nil {
@@ -308,7 +329,12 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 	log.Debugf("check details for file with %s", sanitizeString(fileID))
 
 	db := dbs.DB
-	const query = "SELECT file_path, archive_file_size, header FROM local_ega_ebi.file WHERE file_id = $1"
+	const query = `
+		SELECT f.archive_file_path,
+			   f.archive_file_size,
+			   f.header
+		FROM sda.files f
+		WHERE stable_id = $1`
 
 	fd := &FileDownload{}
 	var hexString string
