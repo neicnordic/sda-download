@@ -200,12 +200,7 @@ func TestCheckFilePermission(t *testing.T) {
 	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
 
 		expected := "dataset1"
-		query := `
-			SELECT datasets.stable_id FROM sda.file_dataset
-			JOIN sda.datasets ON file_dataset.dataset_id = datasets.id
-			JOIN sda.files ON file_dataset.file_id = files.id
-			WHERE files.stable_id = $1;
-		`
+		query := "SELECT datasets.stable_id FROM sda.file_dataset JOIN sda.datasets ON dataset_id = datasets.id JOIN sda.files ON file_id = files.id WHERE files.stable_id = \\$1;"
 		mock.ExpectQuery(query).
 			WithArgs("file1").
 			WillReturnRows(sqlmock.NewRows([]string{"dataset_id"}).AddRow("dataset1"))
@@ -261,11 +256,7 @@ func TestGetFile(t *testing.T) {
 			ArchiveSize: 32,
 			Header:      []byte{171, 193, 35},
 		}
-		query := `
-			SELECT archive_file_path, archive_file_size, header
-			FROM sda.files
-			WHERE stable_id = $1
-		`
+		query := "SELECT archive_file_path, archive_file_size, header FROM sda.files WHERE stable_id = \\$1;"
 
 		mock.ExpectQuery(query).
 			WithArgs("file1").
@@ -303,30 +294,8 @@ func TestGetFiles(t *testing.T) {
 			Status:                    "ready",
 		}
 		expected = append(expected, fileInfo)
-		query := `
-		SELECT f.stable_id AS file_id,
-			d.stable_id AS dataset_id,
-			reverse\(split_part\(reverse\(f.submission_file_path::text\), '/'::text, 1\)\) AS display_file_name,
-			f.archive_file_path AS file_name,
-			f.archive_file_size AS file_size,
-			f.decrypted_file_size,
-			dc.checksum AS decrypted_file_checksum,
-			dc.type AS decrypted_file_checksum_type,
-			e.event AS status
-		FROM sda.files f
-		JOIN sda.file_dataset fd ON fd.file_id = f.id
-		JOIN sda.datasets d ON fd.dataset_id = d.id
-		LEFT JOIN \(SELECT file_id,
-					\(ARRAY_AGG\(event ORDER BY started_at DESC\)\)\[1\] AS event
-				FROM sda.file_event_log
-				GROUP BY file_id\) e
-		ON f.id = e.file_id
-		LEFT JOIN \(SELECT file_id, checksum, type
-			FROM sda.checksums
-		WHERE source = 'UNENCRYPTED'\) dc
-		ON f.id = dc.file_id
-	  	WHERE d.stable_id = \$1;
-	  	`
+		query := "SELECT files.stable_id AS id, datasets.stable_id AS dataset_id, reverse\\(split_part\\(reverse\\(files.submission_file_path::text\\), '/'::text, 1\\)\\) AS display_file_name, files.archive_file_path AS file_name, files.archive_file_size AS file_size, files.decrypted_file_size, sha.checksum AS decrypted_file_checksum, sha.type AS decrypted_file_checksum_type, log.event AS status FROM sda.files JOIN sda.file_dataset ON file_id = files.id JOIN sda.datasets ON file_dataset.dataset_id = datasets.id LEFT JOIN \\(SELECT file_id, \\(ARRAY_AGG\\(event ORDER BY started_at DESC\\)\\)\\[1\\] AS event FROM sda.file_event_log GROUP BY file_id\\) log ON files.id = log.file_id LEFT JOIN \\(SELECT file_id, checksum, type FROM sda.checksums WHERE source = 'UNENCRYPTED'\\) sha ON files.id = sha.file_id WHERE datasets.stable_id = \\$1;"
+
 		mock.ExpectQuery(query).
 			WithArgs("dataset1").
 			WillReturnRows(sqlmock.NewRows([]string{"file_id", "dataset_id",
