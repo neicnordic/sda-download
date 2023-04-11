@@ -168,7 +168,7 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 		LEFT JOIN (SELECT file_id, (ARRAY_AGG(event ORDER BY started_at DESC))[1] AS event FROM sda.file_event_log GROUP BY file_id) log ON files.id = log.file_id
 		LEFT JOIN (SELECT file_id, checksum, type FROM sda.checksums WHERE source = 'UNENCRYPTED') sha ON files.id = sha.file_id
 		WHERE datasets.stable_id = $1;
-	  `
+	`
 
 	// nolint:rowserrcheck
 	rows, err := db.Query(query, datasetID)
