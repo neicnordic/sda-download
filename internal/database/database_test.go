@@ -200,7 +200,12 @@ func TestCheckFilePermission(t *testing.T) {
 	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
 
 		expected := "dataset1"
-		query := "SELECT d.stable_id FROM sda.file_dataset fd JOIN sda.datasets d ON fd.dataset_id = d.id JOIN sda.files f ON fd.file_id = f.id WHERE f.stable_id = \\$1"
+		query := `
+			SELECT datasets.stable_id FROM sda.file_dataset
+			JOIN sda.datasets ON file_dataset.dataset_id = datasets.id
+			JOIN sda.files ON file_dataset.file_id = files.id
+			WHERE files.stable_id = $1;
+		`
 		mock.ExpectQuery(query).
 			WithArgs("file1").
 			WillReturnRows(sqlmock.NewRows([]string{"dataset_id"}).AddRow("dataset1"))
@@ -257,16 +262,14 @@ func TestGetFile(t *testing.T) {
 			Header:      []byte{171, 193, 35},
 		}
 		query := `
-		SELECT f.archive_file_path,
-			   f.archive_file_size,
-			   f.header
-		FROM sda.files f
-		WHERE stable_id = \$1`
+			SELECT archive_file_path, archive_file_size, header
+			FROM sda.files
+			WHERE stable_id = $1
+		`
 
 		mock.ExpectQuery(query).
 			WithArgs("file1").
-			WillReturnRows(sqlmock.NewRows([]string{"file_path", "archive_file_size", "header"}).AddRow(
-				expected.ArchivePath, expected.ArchiveSize, "abc123"))
+			WillReturnRows(sqlmock.NewRows([]string{"file_path", "archive_file_size", "header"}).AddRow(expected.ArchivePath, expected.ArchiveSize, "abc123"))
 
 		x, err := testDb.getFile("file1")
 		assert.Equal(t, expected, x, "did not get expected file details")
