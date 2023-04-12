@@ -28,12 +28,20 @@ type FileInfo struct {
 	FileID                    string `json:"fileId"`
 	DatasetID                 string `json:"datasetId"`
 	DisplayFileName           string `json:"displayFileName"`
+	FilePath                  string `json:"filePath"`
 	FileName                  string `json:"fileName"`
 	FileSize                  int64  `json:"fileSize"`
 	DecryptedFileSize         int64  `json:"decryptedFileSize"`
 	DecryptedFileChecksum     string `json:"decryptedFileChecksum"`
 	DecryptedFileChecksumType string `json:"decryptedFileChecksumType"`
 	Status                    string `json:"fileStatus"`
+	CreatedAt                 string `json:"createdAt"`
+	LastModified              string `json:"lastModified"`
+}
+
+type DatasetInfo struct {
+	DatasetID string `json:"datasetId"`
+	CreatedAt string `json:"createdAt"`
 }
 
 // dbRetryTimes is the number of times to retry the same function if it fails
@@ -156,19 +164,22 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 		SELECT files.stable_id AS id,
 			datasets.stable_id AS dataset_id,
 			reverse(split_part(reverse(files.submission_file_path::text), '/'::text, 1)) AS display_file_name,
+			files.submission_file_path AS file_path,
 			files.archive_file_path AS file_name,
 			files.archive_file_size AS file_size,
 			files.decrypted_file_size,
 			sha.checksum AS decrypted_file_checksum,
 			sha.type AS decrypted_file_checksum_type,
-			log.event AS status
+			log.event AS status,
+			files.created_at,
+			files.last_modified
 		FROM sda.files
 		JOIN sda.file_dataset ON file_id = files.id
 		JOIN sda.datasets ON file_dataset.dataset_id = datasets.id
 		LEFT JOIN (SELECT file_id, (ARRAY_AGG(event ORDER BY started_at DESC))[1] AS event FROM sda.file_event_log GROUP BY file_id) log ON files.id = log.file_id
 		LEFT JOIN (SELECT file_id, checksum, type FROM sda.checksums WHERE source = 'UNENCRYPTED') sha ON files.id = sha.file_id
 		WHERE datasets.stable_id = $1;
-	`
+	  	`
 
 	// nolint:rowserrcheck
 	rows, err := db.Query(query, datasetID)
@@ -184,8 +195,9 @@ func (dbs *SQLdb) getFiles(datasetID string) ([]*FileInfo, error) {
 
 		// Read rows into struct
 		fi := &FileInfo{}
-		err := rows.Scan(&fi.FileID, &fi.DatasetID, &fi.DisplayFileName, &fi.FileName, &fi.FileSize,
-			&fi.DecryptedFileSize, &fi.DecryptedFileChecksum, &fi.DecryptedFileChecksumType, &fi.Status)
+		err := rows.Scan(&fi.FileID, &fi.DatasetID, &fi.DisplayFileName, &fi.FilePath, &fi.FileName,
+			&fi.FileSize, &fi.DecryptedFileSize, &fi.DecryptedFileChecksum,
+			&fi.DecryptedFileChecksumType, &fi.Status, &fi.CreatedAt, &fi.LastModified)
 		if err != nil {
 			log.Error(err)
 
@@ -246,6 +258,115 @@ func (dbs *SQLdb) checkDataset(dataset string) (bool, error) {
 	return true, nil
 }
 
+// GetDatasetInfo returns further information on a given `datasetID` as
+// `*DatasetInfo`.
+var GetDatasetInfo = func(datasetID string) (*DatasetInfo, error) {
+	var (
+		d     *DatasetInfo = nil
+		err   error        = nil
+		count int          = 0
+	)
+
+	for count < dbRetryTimes {
+		d, err = DB.getDatasetInfo(datasetID)
+		if err != nil {
+			count++
+
+			continue
+		}
+
+		break
+	}
+
+	return d, err
+}
+
+func (dbs *SQLdb) getDatasetInfo(datasetID string) (*DatasetInfo, error) {
+	dbs.checkAndReconnectIfNeeded()
+
+	db := dbs.DB
+	const query = "SELECT stable_id, created_at FROM sda.datasets WHERE stable_id = $1"
+
+	dataset := &DatasetInfo{}
+	if err := db.QueryRow(query, datasetID).Scan(&dataset.DatasetID, &dataset.CreatedAt); err != nil {
+		return nil, err
+	}
+
+	return dataset, nil
+}
+
+// GetDatasetFileInfo returns information on a file given a dataset ID and an
+// upload file path
+var GetDatasetFileInfo = func(datasetID, filePath string) (*FileInfo, error) {
+	var (
+		d     *FileInfo = nil
+		err   error     = nil
+		count int       = 0
+	)
+
+	for count < dbRetryTimes {
+		d, err = DB.getDatasetFileInfo(datasetID, filePath)
+		if err != nil {
+			count++
+
+			continue
+		}
+
+		break
+	}
+
+	return d, err
+}
+
+// getDatasetFileInfo is the actual function performing work for GetFile
+func (dbs *SQLdb) getDatasetFileInfo(datasetID, filePath string) (*FileInfo, error) {
+	dbs.checkAndReconnectIfNeeded()
+
+	file := &FileInfo{}
+	db := dbs.DB
+
+	const query = `
+		SELECT f.stable_id AS file_id,
+			d.stable_id AS dataset_id,
+			reverse(split_part(reverse(f.submission_file_path::text), '/'::text, 1)) AS display_file_name,
+			f.submission_file_path AS file_path,
+			f.archive_file_path AS file_name,
+			f.archive_file_size AS file_size,
+			f.decrypted_file_size,
+			dc.checksum AS decrypted_file_checksum,
+			dc.type AS decrypted_file_checksum_type,
+			e.event AS status,
+			f.created_at,
+			f.last_modified
+		FROM sda.files f
+		JOIN sda.file_dataset fd ON fd.file_id = f.id
+		JOIN sda.datasets d ON fd.dataset_id = d.id
+		LEFT JOIN (SELECT file_id,
+					(ARRAY_AGG(event ORDER BY started_at DESC))[1] AS event
+				FROM sda.file_event_log
+				GROUP BY file_id) e
+		ON f.id = e.file_id
+		LEFT JOIN (SELECT file_id, checksum, type
+			FROM sda.checksums
+		WHERE source = 'UNENCRYPTED') dc
+		ON f.id = dc.file_id
+		WHERE d.stable_id = $1 AND f.submission_file_path = $2;`
+
+	// nolint:rowserrcheck
+	err := db.QueryRow(query, datasetID, filePath).Scan(&file.FileID,
+		&file.DatasetID, &file.DisplayFileName, &file.FilePath, &file.FileName,
+		&file.FileSize, &file.DecryptedFileSize, &file.DecryptedFileChecksum,
+		&file.DecryptedFileChecksumType, &file.Status, &file.CreatedAt,
+		&file.LastModified)
+	if err != nil {
+		log.Error(err)
+
+		return nil, err
+	}
+
+	return file, nil
+}
+
 // CheckFilePermission checks if user has permissions to access the dataset the file is a part of
 var CheckFilePermission = func(fileID string) (string, error) {
 	var (
@@ -294,9 +415,12 @@ func (dbs *SQLdb) checkFilePermission(fileID string) (string, error) {
 
 // FileDownload details are used for downloading a file
 type FileDownload struct {
-	ArchivePath string
-	ArchiveSize int
-	Header      []byte
+	ArchivePath       string
+	ArchiveSize       int
+	DecryptedSize     int
+	DecryptedChecksum string
+	LastModified      string
+	Header            []byte
 }
 
 // GetFile retrieves the file header
@@ -328,14 +452,23 @@ func (dbs *SQLdb) getFile(fileID string) (*FileDownload, error) {
 
 	db := dbs.DB
 	const query = `
-		SELECT archive_file_path, archive_file_size, header
-		FROM sda.files
-		WHERE stable_id = $1;
-	`
+		SELECT f.archive_file_path,
+			   f.archive_file_size,
+			   f.decrypted_file_size,
+			   dc.checksum AS decrypted_checksum,
+			   f.last_modified,
+			   f.header
+		FROM sda.files f
+		LEFT JOIN (SELECT file_id, checksum, type
+			FROM sda.checksums
+		WHERE source = 'UNENCRYPTED') dc
+		ON f.id = dc.file_id
+		WHERE stable_id = $1`
 
 	fd := &FileDownload{}
 	var hexString string
-	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize, &hexString)
+	err := db.QueryRow(query, fileID).Scan(&fd.ArchivePath, &fd.ArchiveSize,
+		&fd.DecryptedSize, &fd.DecryptedChecksum, &fd.LastModified, &hexString)
 	if err != nil {
 		log.Errorf("could not retrieve details for file %s, reason %s", sanitizeString(fileID), err)
 

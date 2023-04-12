@@ -127,7 +127,9 @@ func TestGetOIDCDetails_Success(t *testing.T) {
 func TestGetToken_Fail_EmptyHeader(t *testing.T) {
 
 	// Test case
-	token, code, err := GetToken("")
+	header := http.Header{}
+	header.Add("Authorization", "")
+	token, code, err := GetToken(header)
 
 	// Expected results
 	expectedToken := ""
@@ -149,7 +151,9 @@ func TestGetToken_Fail_EmptyHeader(t *testing.T) {
 func TestGetToken_Fail_WrongScheme(t *testing.T) {
 
 	// Test case
-	token, code, err := GetToken("Basic token")
+	header := http.Header{}
+	header.Add("Authorization", "Basic token")
+	token, code, err := GetToken(header)
 
 	// Expected results
 	expectedToken := ""
@@ -171,7 +175,9 @@ func TestGetToken_Fail_WrongScheme(t *testing.T) {
 func TestGetToken_Fail_MissingToken(t *testing.T) {
 
 	// Test case
-	token, code, err := GetToken("Bearer")
+	header := http.Header{}
+	header.Add("Authorization", "Bearer")
+	token, code, err := GetToken(header)
 
 	// Expected results
 	expectedToken := ""
@@ -193,7 +199,9 @@ func TestGetToken_Fail_MissingToken(t *testing.T) {
 func TestGetToken_Success(t *testing.T) {
 
 	// Test case
-	token, code, err := GetToken("Bearer token")
+	header := http.Header{}
+	header.Add("Authorization", "Bearer token")
+	token, code, err := GetToken(header)
 
 	// Expected results
 	expectedToken := "token"
