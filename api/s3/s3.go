@@ -210,9 +210,13 @@ func GetObject(c *gin.Context) {
 // dataset name is done by comparing to accessible datasets.
 func parseParams(c *gin.Context) *gin.Context {
 
-	// remove leading slash from the path, as the dataset names don't have
-	// leading slashes
-	path := strings.Trim(c.Param("path"), "/")
+	// When doing list requests from s3cmd, the tool will assume that the first
+	// slash delimits the bucket, and the rest is the prefix. We use this to
+	// "restore" the path in case the prefix param is set.
+	path := c.Param("path") + c.Query("prefix")
+
+	// Trim slashes from the path, as the dataset names don't have slashes
+	path = strings.Trim(path, "/")
 
 	path, err := url.QueryUnescape(path)
 	if err != nil {
