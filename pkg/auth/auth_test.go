@@ -148,6 +148,29 @@ func TestGetToken_Fail_EmptyHeader(t *testing.T) {
 
 }
 
+func TestGetToken_X_Amz_Security_token(t *testing.T) {
+
+	// Expected results
+	expectedToken := "token"
+	expectedCode := 0
+
+	// Test case
+	header := http.Header{}
+	header.Add("X-Amz-Security-Token", expectedToken)
+	token, code, err := GetToken(header)
+
+	if token != expectedToken {
+		t.Errorf("TestGetToken_X_Amz_Security_token failed, expected %s, received %s", expectedToken, token)
+	}
+	if code != expectedCode {
+		t.Errorf("TestGetToken_X_Amz_Security_token failed, expected %d, received %d", expectedCode, code)
+	}
+	if err != nil {
+		t.Errorf("TestGetToken_X_Amz_Security_token failed, expected nil, received %v", err)
+	}
+
+}
+
 func TestGetToken_Fail_WrongScheme(t *testing.T) {
 
 	// Test case
