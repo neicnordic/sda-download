@@ -144,6 +144,10 @@ func ListObjects(c *gin.Context) {
 	// We return the full upload path, as file key
 	objects := []Object{}
 	for _, file := range files {
+		key := strings.TrimSuffix(file.FilePath, ".c4gh")
+		if !strings.HasPrefix(key, c.Param("prefix")) {
+			continue
+		}
 		lastModified, err := time.Parse(time.RFC3339, file.LastModified)
 		if err != nil {
 			log.Errorf("failed to parse last modified time: %v", err)
@@ -152,7 +156,7 @@ func ListObjects(c *gin.Context) {
 			return
 		}
 		objects = append(objects, Object{
-			Key:          strings.TrimSuffix(file.FilePath, ".c4gh"),
+			Key:          key,
 			Size:         int(file.DecryptedFileSize),
 			LastModified: lastModified.Format(http.TimeFormat),
 		})
@@ -237,12 +241,16 @@ func parseParams(c *gin.Context) *gin.Context {
 		// prefix of another one, like "dataset1", and "dataset10".
 		if strings.HasPrefix(path, dataset) && (len(path) == len(dataset) || path[len(dataset)] == '/') {
 			c.Params = append(c.Params, gin.Param{Key: "dataset", Value: dataset})
-			filename := ""
+			remainder := ""
 			if len(path) > len(dataset) {
-				filename = path[len(dataset)+1:]
+				remainder = path[len(dataset)+1:]
 			}
 
-			c.Params = append(c.Params, gin.Param{Key: "filename", Value: filename})
+			key := "filename"
+			if c.Query("prefix") != "" {
+				key = "prefix"
+			}
+			c.Params = append(c.Params, gin.Param{Key: key, Value: remainder})
 
 			break
 		}
@@ -267,11 +275,6 @@ func Download(c *gin.Context) {
 
 	case strings.Contains(c.Request.URL.String(), "?location"):
 		GetBucketLocation(c)
-
-	case strings.Contains(c.Request.URL.String(), "?prefix"):
-		// This is for handling recursive downloads, which we don't need to
-		// support right now.
-		c.AbortWithStatus(http.StatusNotImplemented)
 
 	case c.Param("dataset") != "" && c.Param("filename") == "":
 		ListObjects(c)
