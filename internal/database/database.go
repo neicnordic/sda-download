@@ -299,9 +299,9 @@ func (dbs *SQLdb) getDatasetInfo(datasetID string) (*DatasetInfo, error) {
 // upload file path
 var GetDatasetFileInfo = func(datasetID, filePath string) (*FileInfo, error) {
 	var (
-		d     *FileInfo = nil
-		err   error     = nil
-		count int       = 0
+		d     *FileInfo
+		err   error
+		count int
 	)
 
 	for count < dbRetryTimes {

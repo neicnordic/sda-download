@@ -101,8 +101,10 @@ func ListBuckets(c *gin.Context) {
 			c.AbortWithStatus(http.StatusInternalServerError)
 		}
 		// TODO: Add real creation date
-		buckets = append(buckets, Bucket{Name: datasetInfo.DatasetID,
-			CreationDate: datasetInfo.CreatedAt})
+		buckets = append(buckets, Bucket{
+			Name:         datasetInfo.DatasetID,
+			CreationDate: datasetInfo.CreatedAt,
+		})
 	}
 
 	c.XML(http.StatusAccepted, ListAllMyBucketsResult{
@@ -187,13 +189,11 @@ func GetObject(c *gin.Context) {
 	// Get file info for the given file path (or abort)
 	fileInfo, err := database.GetDatasetFileInfo(c.Param("dataset"), c.Param("filename")+".c4gh")
 	if err != nil {
-		c.AbortWithStatus(http.StatusInternalServerError)
-
-		return
-	}
-
-	if fileInfo == nil {
-		c.AbortWithStatus(http.StatusNotFound)
+		if err.Error() == "sql: no rows in result set" {
+			c.AbortWithStatus(http.StatusNotFound)
+		} else {
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
 
 		return
 	}
