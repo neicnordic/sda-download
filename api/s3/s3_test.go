@@ -172,7 +172,7 @@ func (suite *S3TestSuite) TestListByPrefix() {
 	_, router := gin.CreateTestContext(w)
 
 	router.GET("/*path", middleware.TokenMiddleware(), Download)
-	router.ServeHTTP(w, httptest.NewRequest("GET", "/dataset1/?prefix=dir/", nil))
+	router.ServeHTTP(w, httptest.NewRequest("GET", "/dataset1/?prefix=fi", nil))
 
 	response := w.Result()
 	body, err := io.ReadAll(response.Body)
@@ -181,7 +181,7 @@ func (suite *S3TestSuite) TestListByPrefix() {
 
 	expected := xml.Header +
 		"<ListBucketResult><CommonPrefixes></CommonPrefixes><Contents>" +
-		"<Key>dir/file.txt</Key>" +
+		"<Key>file.txt</Key>" +
 		"<LastModified>Mon, 17 Apr 2023 14:40:12 GMT</LastModified>" +
 		"<Owner></Owner>" +
 		"<Size>32</Size>" +
@@ -259,7 +259,7 @@ func (suite *S3TestSuite) TestListObjects() {
 
 	expected := xml.Header +
 		"<ListBucketResult><CommonPrefixes></CommonPrefixes><Contents>" +
-		"<Key>dir/file.txt</Key>" +
+		"<Key>file.txt</Key>" +
 		"<LastModified>Mon, 17 Apr 2023 14:40:12 GMT</LastModified>" +
 		"<Owner></Owner>" +
 		"<Size>32</Size>" +

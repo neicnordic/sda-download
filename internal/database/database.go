@@ -350,7 +350,10 @@ func (dbs *SQLdb) getDatasetFileInfo(datasetID, filePath string) (*FileInfo, err
 			FROM sda.checksums
 		WHERE source = 'UNENCRYPTED') dc
 		ON f.id = dc.file_id
-		WHERE d.stable_id = $1 AND f.submission_file_path = $2;`
+		WHERE d.stable_id = $1 AND f.submission_file_path ~ ('^[^/]*/?' || $2);`
+	// regexp matching in the submission file path in order to disregard the
+	// first slash-separated path element. The first path element is the id of
+	// the uploading user which should not be displayed.
 
 	// nolint:rowserrcheck
 	err := db.QueryRow(query, datasetID, filePath).Scan(&file.FileID,

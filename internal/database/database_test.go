@@ -326,7 +326,7 @@ func TestGetDatasetFileInfo(t *testing.T) {
 			FROM sda.checksums
 		WHERE source = 'UNENCRYPTED'\) dc
 		ON f.id = dc.file_id
-		WHERE d.stable_id = \$1 AND f.submission_file_path = \$2;`
+		WHERE d.stable_id = \$1 AND f.submission_file_path ~ \('\^\[\^\/\]\*/\?' \|\| \$2\);`
 		mock.ExpectQuery(query).
 			WithArgs("dataset1", "file1").
 			WillReturnRows(sqlmock.NewRows([]string{"file_id", "dataset_id",

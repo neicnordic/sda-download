@@ -147,6 +147,14 @@ func ListObjects(c *gin.Context) {
 	objects := []Object{}
 	for _, file := range files {
 		key := strings.TrimSuffix(file.FilePath, ".c4gh")
+		// The first part of the upload path is the user id, which should be
+		// removed
+		parts := strings.Split(key, "/")
+		if len(parts) > 1 {
+			parts = parts[1:]
+		}
+		key = strings.Join(parts, "/")
+
 		if !strings.HasPrefix(key, c.Param("prefix")) {
 			continue
 		}
