@@ -254,23 +254,139 @@ func TestCheckDataset(t *testing.T) {
 	log.SetOutput(os.Stdout)
 }
 
+func TestGetDatasetInfo(t *testing.T) {
+	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
+
+		expected := &DatasetInfo{
+			DatasetID: "dataset1",
+			CreatedAt: "now",
+		}
+		query := `SELECT stable_id, created_at FROM sda.datasets WHERE stable_id = \$1`
+		mock.ExpectQuery(query).
+			WithArgs("dataset1").
+			WillReturnRows(sqlmock.NewRows([]string{"stable_id", "created_at"}).AddRow(expected.DatasetID, expected.CreatedAt))
+
+		x, err := testDb.getDatasetInfo("dataset1")
+
+		assert.Equal(t, expected, x, "did not get expected dataset value")
+
+		return err
+	})
+
+	assert.Nil(t, r, "checkDataset failed unexpectedly")
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	buf.Reset()
+
+	log.SetOutput(os.Stdout)
+}
+
+func TestGetDatasetFileInfo(t *testing.T) {
+	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
+
+		expected := &FileInfo{
+			FileID:                    "file1",
+			DatasetID:                 "dataset1",
+			DisplayFileName:           "file.txt",
+			FilePath:                  "dir/file.txt",
+			FileName:                  "urn:file1",
+			FileSize:                  60,
+			DecryptedFileSize:         32,
+			DecryptedFileChecksum:     "hash",
+			DecryptedFileChecksumType: "sha256",
+			Status:                    "ready",
+			CreatedAt:                 "a while ago",
+			LastModified:              "now",
+		}
+
+		query := `
+		SELECT f.stable_id AS file_id,
+			d.stable_id AS dataset_id,
+			reverse\(split_part\(reverse\(f.submission_file_path::text\), '/'::text, 1\)\) AS display_file_name,
+			f.submission_file_path AS file_path,
+			f.archive_file_path AS file_name,
+			f.archive_file_size AS file_size,
+			f.decrypted_file_size,
+			dc.checksum AS decrypted_file_checksum,
+			dc.type AS decrypted_file_checksum_type,
+			e.event AS status,
+			f.created_at,
+			f.last_modified
+		FROM sda.files f
+		JOIN sda.file_dataset fd ON fd.file_id = f.id
+		JOIN sda.datasets d ON fd.dataset_id = d.id
+		LEFT JOIN \(SELECT file_id,
+					\(ARRAY_AGG\(event ORDER BY started_at DESC\)\)\[1\] AS event
+				FROM sda.file_event_log
+				GROUP BY file_id\) e
+		ON f.id = e.file_id
+		LEFT JOIN \(SELECT file_id, checksum, type
+			FROM sda.checksums
+		WHERE source = 'UNENCRYPTED'\) dc
+		ON f.id = dc.file_id
+		WHERE d.stable_id = \$1 AND f.submission_file_path ~ \('\^\[\^\/\]\*/\?' \|\| \$2\);`
+		mock.ExpectQuery(query).
+			WithArgs("dataset1", "file1").
+			WillReturnRows(sqlmock.NewRows([]string{"file_id", "dataset_id",
+				"display_file_name", "file_path", "file_name", "file_size",
+				"decrypted_file_size", "decrypted_file_checksum",
+				"decrypted_file_checksum_type", "file_status", "created_at",
+				"last_modified"}).AddRow(expected.FileID, expected.DatasetID,
+				expected.DisplayFileName, expected.FilePath, expected.FileName,
+				expected.FileSize, expected.DecryptedFileSize,
+				expected.DecryptedFileChecksum, expected.DecryptedFileChecksumType,
+				expected.Status, expected.CreatedAt, expected.LastModified))
+
+		x, err := testDb.getDatasetFileInfo("dataset1", "file1")
+
+		assert.Equal(t, expected, x, "did not get expected file values")
+
+		return err
+	})
+
+	assert.Nil(t, r, "checkDataset failed unexpectedly")
+
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	buf.Reset()
+
+	log.SetOutput(os.Stdout)
+}
+
 func TestGetFile(t *testing.T) {
 	r := sqlTesterHelper(t, func(mock sqlmock.Sqlmock, testDb *SQLdb) error {
 
 		expected := &FileDownload{
-			ArchivePath: "file.txt",
-			ArchiveSize: 32,
-			Header:      []byte{171, 193, 35},
+			ArchivePath:       "file.txt",
+			ArchiveSize:       32,
+			DecryptedSize:     1024,
+			DecryptedChecksum: "sha256checksum",
+			LastModified:      "now",
+			Header:            []byte{171, 193, 35},
 		}
 		query := `
-			SELECT archive_file_path, archive_file_size, header
-			FROM sda.files
-			WHERE stable_id = \$1;
-		`
+		SELECT f.archive_file_path,
+			   f.archive_file_size,
+			   f.decrypted_file_size,
+			   dc.checksum AS decrypted_checksum,
+			   f.last_modified,
+			   f.header
+		FROM sda.files f
+		LEFT JOIN \(SELECT file_id, checksum, type
+			FROM sda.checksums
+		WHERE source = 'UNENCRYPTED'\) dc
+		ON f.id = dc.file_id
+		WHERE stable_id = \$1`
 
 		mock.ExpectQuery(query).
 			WithArgs("file1").
-			WillReturnRows(sqlmock.NewRows([]string{"file_path", "archive_file_size", "header"}).AddRow(expected.ArchivePath, expected.ArchiveSize, "abc123"))
+			WillReturnRows(sqlmock.NewRows([]string{"file_path", "archive_file_size",
+				"decrypted_file_size", "decrypted_checksum", "last_modified", "header"}).AddRow(
+				expected.ArchivePath, expected.ArchiveSize, expected.DecryptedSize,
+				expected.DecryptedChecksum, expected.LastModified, "abc123"))
 
 		x, err := testDb.getFile("file1")
 		assert.Equal(t, expected, x, "did not get expected file details")
@@ -296,24 +412,30 @@ func TestGetFiles(t *testing.T) {
 			FileID:                    "file1",
 			DatasetID:                 "dataset1",
 			DisplayFileName:           "file.txt",
+			FilePath:                  "dir/file.txt",
 			FileName:                  "urn:file1",
 			FileSize:                  60,
 			DecryptedFileSize:         32,
 			DecryptedFileChecksum:     "hash",
 			DecryptedFileChecksumType: "sha256",
 			Status:                    "ready",
+			CreatedAt:                 "a while ago",
+			LastModified:              "now",
 		}
 		expected = append(expected, fileInfo)
 		query := `
 			SELECT files.stable_id AS id,
 				datasets.stable_id AS dataset_id,
 				reverse\(split_part\(reverse\(files.submission_file_path::text\), '/'::text, 1\)\) AS display_file_name,
+				files.submission_file_path AS file_path,
 				files.archive_file_path AS file_name,
 				files.archive_file_size AS file_size,
 				files.decrypted_file_size,
 				sha.checksum AS decrypted_file_checksum,
 				sha.type AS decrypted_file_checksum_type,
-				log.event AS status
+				log.event AS status,
+				files.created_at,
+				files.last_modified
 			FROM sda.files
 			JOIN sda.file_dataset ON file_id = files.id
 			JOIN sda.datasets ON file_dataset.dataset_id = datasets.id
@@ -321,18 +443,17 @@ func TestGetFiles(t *testing.T) {
 			LEFT JOIN \(SELECT file_id, checksum, type FROM sda.checksums WHERE source = 'UNENCRYPTED'\) sha ON files.id = sha.file_id
 			WHERE datasets.stable_id = \$1;
 		`
-
-		mock.ExpectQuery(strings.ReplaceAll(strings.ReplaceAll(query, "\t", ""), "\n", " ")).
+		mock.ExpectQuery(query).
 			WithArgs("dataset1").
 			WillReturnRows(sqlmock.NewRows([]string{"file_id", "dataset_id",
-				"display_file_name", "file_name", "file_size",
+				"display_file_name", "file_path", "file_name", "file_size",
 				"decrypted_file_size", "decrypted_file_checksum",
-				"decrypted_file_checksum_type", "file_status"}).AddRow(
-				fileInfo.FileID, fileInfo.DatasetID,
-				fileInfo.DisplayFileName, fileInfo.FileName,
+				"decrypted_file_checksum_type", "file_status", "created_at",
+				"last_modified"}).AddRow(fileInfo.FileID, fileInfo.DatasetID,
+				fileInfo.DisplayFileName, fileInfo.FilePath, fileInfo.FileName,
 				fileInfo.FileSize, fileInfo.DecryptedFileSize,
 				fileInfo.DecryptedFileChecksum, fileInfo.DecryptedFileChecksumType,
-				fileInfo.Status))
+				fileInfo.Status, fileInfo.CreatedAt, fileInfo.LastModified))
 
 		x, err := testDb.getFiles("dataset1")
 		assert.Equal(t, expected, x, "did not get expected file details")
