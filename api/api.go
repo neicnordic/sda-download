@@ -56,7 +56,7 @@ func Setup() *http.Server {
 		TLSNextProto:      make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 		ReadHeaderTimeout: 20 * time.Second,
 		ReadTimeout:       5 * time.Minute,
-		WriteTimeout:      20 * time.Second,
+		WriteTimeout:      -1,
 	}
 
 	return srv
