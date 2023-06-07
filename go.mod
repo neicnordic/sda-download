@@ -14,7 +14,7 @@ require (
 	github.com/neicnordic/crypt4gh v1.7.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.16.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 )
 
 require (
