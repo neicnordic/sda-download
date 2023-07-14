@@ -371,7 +371,7 @@ func (c *Map) configDatabase() error {
 func (c *Map) configPlugins() {
 	p := PluginsConf{}
 
-	viper.SetDefault("plugins.middleware", "./api/middleware/plugins/token_middleware.go")
+	viper.SetDefault("plugins.middleware", "./api/middleware/plugins/token_middleware.so")
 
 	if viper.IsSet("plugins.middleware") {
 		p.Middleware = viper.GetString("plugins.middleware")

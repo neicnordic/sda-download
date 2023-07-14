@@ -6,6 +6,7 @@ The plugin:
 - must be a `main` package
 - can import `sda-download` internal packages, if built inside the project
 - must have a `CustomMiddleware` interface with a `GetDatasets` method which returns the list of datasets as `[]string{}`
+- must be built with the same `go` and package versions as the main web app has been built with
 
 ## Example plugin
 ```go
@@ -29,7 +30,7 @@ The plugin can be built with:
 ```
 go build -buildmode=plugin -o your_middleware.so your_middleware.go
 ```
-This is required when running the web app with `go run`. The [Dockerfile](../../../Dockerfile) will automatically build any plugins in the plugins directory.
+This is required when running the web app with `go run`. The [Dockerfile](../../../Dockerfile) will automatically build any plugins in the plugins directory, and store them in the `/plugins` directory in the image. More plugins can be loaded in with volumes.
 
 ## Selecting plugin for runtime
 The default middleware plugin is `token_middleware.so`, and can be changed with the `plugins.middleware` configuration variable. The variable must be a filepath that points to a prebuilt plugin binary.
