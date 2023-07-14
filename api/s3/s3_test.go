@@ -66,7 +66,7 @@ func (suite *S3TestSuite) TestGetBucketLocation() {
 
 	w := httptest.NewRecorder()
 	_, router := gin.CreateTestContext(w)
-	router.GET("/*path", middleware.TokenMiddleware(), Download)
+	router.GET("/*path", middleware.Middleware(), Download)
 	router.ServeHTTP(w, httptest.NewRequest("GET", "/?location", nil))
 
 	response := w.Result()
@@ -95,7 +95,7 @@ func (suite *S3TestSuite) TestListBuckets() {
 	w := httptest.NewRecorder()
 	_, router := gin.CreateTestContext(w)
 
-	router.GET("/*path", middleware.TokenMiddleware(), Download)
+	router.GET("/*path", middleware.Middleware(), Download)
 	router.ServeHTTP(w, httptest.NewRequest("GET", "/", nil))
 
 	response := w.Result()
@@ -171,7 +171,7 @@ func (suite *S3TestSuite) TestListByPrefix() {
 	w := httptest.NewRecorder()
 	_, router := gin.CreateTestContext(w)
 
-	router.GET("/*path", middleware.TokenMiddleware(), Download)
+	router.GET("/*path", middleware.Middleware(), Download)
 	router.ServeHTTP(w, httptest.NewRequest("GET", "/dataset1/?prefix=fi", nil))
 
 	response := w.Result()
@@ -249,7 +249,7 @@ func (suite *S3TestSuite) TestListObjects() {
 	w := httptest.NewRecorder()
 	_, router := gin.CreateTestContext(w)
 
-	router.GET("/*path", middleware.TokenMiddleware(), Download)
+	router.GET("/*path", middleware.Middleware(), Download)
 	router.ServeHTTP(w, httptest.NewRequest("GET", "/dataset1", nil))
 
 	response := w.Result()
@@ -308,7 +308,7 @@ func (suite *S3TestSuite) TestParseParams() {
 
 		w := httptest.NewRecorder()
 		_, router := gin.CreateTestContext(w)
-		router.GET("/*path", middleware.TokenMiddleware(), testParseParams)
+		router.GET("/*path", middleware.Middleware(), testParseParams)
 		router.ServeHTTP(w, httptest.NewRequest("GET", params.Path, nil))
 
 		response := w.Result()

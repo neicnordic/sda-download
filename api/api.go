@@ -29,11 +29,11 @@ func Setup() *http.Server {
 
 	router.HandleMethodNotAllowed = true
 
-	router.GET("/metadata/datasets", middleware.TokenMiddleware(), sda.Datasets)
-	router.GET("/metadata/datasets/*dataset", middleware.TokenMiddleware(), sda.Files)
-	router.GET("/files/:fileid", middleware.TokenMiddleware(), sda.Download)
-	router.GET("/s3/*path", middleware.TokenMiddleware(), s3.Download)
-	router.HEAD("/s3/*path", middleware.TokenMiddleware(), s3.Download)
+	router.GET("/metadata/datasets", middleware.Middleware(), sda.Datasets)
+	router.GET("/metadata/datasets/*dataset", middleware.Middleware(), sda.Files)
+	router.GET("/files/:fileid", middleware.Middleware(), sda.Download)
+	router.GET("/s3/*path", middleware.Middleware(), s3.Download)
+	router.HEAD("/s3/*path", middleware.Middleware(), s3.Download)
 	router.GET("/health", healthResponse)
 
 	// Configure TLS settings

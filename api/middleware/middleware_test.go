@@ -38,7 +38,7 @@ func TestTokenMiddleware_Fail_GetToken(t *testing.T) {
 	_, router := gin.CreateTestContext(w)
 
 	// Send a request through the middleware
-	router.GET("/", TokenMiddleware(), testEndpoint)
+	router.GET("/", Middleware(), testEndpoint)
 	router.ServeHTTP(w, r)
 
 	// Test the outcomes of the handler
@@ -83,7 +83,7 @@ func TestTokenMiddleware_Fail_GetVisas(t *testing.T) {
 	_, router := gin.CreateTestContext(w)
 
 	// Send a request through the middleware
-	router.GET("/", TokenMiddleware(), testEndpoint)
+	router.GET("/", Middleware(), testEndpoint)
 	router.ServeHTTP(w, r)
 
 	// Test the outcomes of the handler
@@ -133,7 +133,7 @@ func TestTokenMiddleware_Fail_GetPermissions(t *testing.T) {
 	_, router := gin.CreateTestContext(w)
 
 	// Send a request through the middleware
-	router.GET("/", TokenMiddleware(), testEndpoint)
+	router.GET("/", Middleware(), testEndpoint)
 	router.ServeHTTP(w, r)
 
 	// Test the outcomes of the handler
@@ -189,7 +189,7 @@ func TestTokenMiddleware_Success_NoCache(t *testing.T) {
 	}
 
 	// Send a request through the middleware
-	router.GET("/", TokenMiddleware(), testEndpointWithContextData)
+	router.GET("/", Middleware(), testEndpointWithContextData)
 	router.ServeHTTP(w, r)
 
 	// Test the outcomes of the handler
@@ -252,7 +252,7 @@ func TestTokenMiddleware_Success_FromCache(t *testing.T) {
 	}
 
 	// Send a request through the middleware
-	router.GET("/", TokenMiddleware(), testEndpointWithContextData)
+	router.GET("/", Middleware(), testEndpointWithContextData)
 	router.ServeHTTP(w, r)
 
 	// Test the outcomes of the handler

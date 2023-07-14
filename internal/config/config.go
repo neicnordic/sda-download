@@ -29,6 +29,7 @@ type Map struct {
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
 	Archive storage.Conf
+	Plugins PluginsConf
 }
 
 type AppConfig struct {
@@ -129,6 +130,12 @@ type DatabaseConfig struct {
 	ClientKey string
 }
 
+type PluginsConf struct {
+	// Path to prebuilt middleware plugin binary
+	// Optional. Default value `./api/middleware/plugins/token_middleware.so`
+	Middleware string
+}
+
 // NewConfig populates ConfigMap with data
 func NewConfig() (*Map, error) {
 	viper.SetConfigName("config")
@@ -191,6 +198,7 @@ func NewConfig() (*Map, error) {
 	c.applyDefaults()
 	c.sessionConfig()
 	c.configArchive()
+	c.configPlugins()
 	err := c.configureOIDC()
 	if err != nil {
 		return nil, err
@@ -357,6 +365,19 @@ func (c *Map) configDatabase() error {
 	c.DB = db
 
 	return nil
+}
+
+// load plugin binaries from filepaths
+func (c *Map) configPlugins() {
+	p := PluginsConf{}
+
+	viper.SetDefault("plugins.middleware", "./api/middleware/plugins/token_middleware.go")
+
+	if viper.IsSet("plugins.middleware") {
+		p.Middleware = viper.GetString("plugins.middleware")
+	}
+
+	c.Plugins = p
 }
 
 // readTrustedIssuers reads information about trusted iss: jku keypair

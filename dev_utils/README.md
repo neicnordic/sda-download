@@ -2,8 +2,9 @@
 
 ## Getting started locally
 In root repository
-
+- [middleware plugins](../api/middleware/plugins/README.md) must be built beforehand
 ```
+go build -buildmode=plugin -o ./api/middleware/plugins/token_middleware.so ./api/middleware/plugins/token_middleware.go
 export CONFIGFILE="./dev_utils/config.yaml"
 go run cmd/main.go
 ```

@@ -4,6 +4,11 @@ app:
   serverkey: "./dev_utils/certs/download-key.pem"
   port: "8443"
 
+plugins:
+  # see ./api/middleware/plugins/README.md for more information
+  # on how to work with middleware plugins
+  middleware: ./api/middleware/plugins/token_middleware.so
+
 log:
   level: "debug"
   format: "json"

@@ -1,7 +1,10 @@
 package main
 
 import (
+	"plugin"
+
 	"github.com/neicnordic/sda-download/api"
+	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/api/sda"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
@@ -59,6 +62,23 @@ func init() {
 		log.Panicf("Error initiating storage backend, reason: %v", err)
 	}
 	sda.Backend = backend
+
+	// Select middleware plugin for authentication and authorization
+	plug, err := plugin.Open(conf.Plugins.Middleware)
+	if err != nil {
+		log.Panicf("Error opening plugin %s, reason: %v", conf.Plugins.Middleware, err)
+	}
+
+	customMiddlewareSymbol, err := plug.Lookup("CustomMiddleware")
+	if err != nil {
+		log.Panicf("Error loading plugin %s, reason: %v", "ppp", err)
+	}
+
+	customMiddleware, ok := customMiddlewareSymbol.(middleware.CustomMiddleware)
+	if !ok {
+		log.Panicf("Error setting plugin %s, reason: %v", "ppp", err)
+	}
+	middleware.CustomLoadedMiddleware = customMiddleware
 }
 
 // main starts the web server
