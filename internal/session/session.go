@@ -50,25 +50,20 @@ func InitialiseSessionCache() (*ristretto.Cache, error) {
 }
 
 // Get returns a value from cache at key
-var Get = func(key string) ([]string, bool) {
+var Get = func(key string) (DatasetCache, bool) {
 	log.Debug("get value from cache")
-	header, exists := SessionCache.Get(key)
-	var cachedDatasets []string
-	if header != nil {
-		cachedDatasets = header.(DatasetCache).Datasets
-	} else {
-		cachedDatasets = nil
+	cached, exists := SessionCache.Get(key)
+	var cachedDatasets DatasetCache // default nil
+	if cached != nil {
+		cachedDatasets = cached.(DatasetCache)
 	}
-	log.Debugf("cache response, exists=%t, datasets=%s", exists, cachedDatasets)
+	log.Debugf("cache response, exists=%t, cached=%v", exists, cachedDatasets)
 
 	return cachedDatasets, exists
 }
 
-func Set(key string, datasets []string) {
+func Set(key string, datasetCache DatasetCache) {
 	log.Debug("store to cache")
-	datasetCache := DatasetCache{
-		Datasets: datasets,
-	}
 	// Each item has a cost of 1, with max size of cache being 100,000 items
 	SessionCache.SetWithTTL(key, datasetCache, 1, config.Config.Session.Expiration)
 	log.Debug("stored to cache")
