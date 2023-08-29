@@ -22,11 +22,11 @@ import (
 func TestDatasets(t *testing.T) {
 
 	// Save original to-be-mocked functions
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(c *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(c *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1", "dataset2"},
 		}
 	}
@@ -34,7 +34,7 @@ func TestDatasets(t *testing.T) {
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Set("datasets", session.DatasetCache{Datasets: []string{"dataset1", "dataset2"}})
+	c.Set("datasets", session.Cache{Datasets: []string{"dataset1", "dataset2"}})
 
 	// Test the outcomes of the handler
 	Datasets(c)
@@ -55,7 +55,7 @@ func TestDatasets(t *testing.T) {
 	}
 
 	// Return mock functions to originals
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 
 }
 
@@ -96,12 +96,12 @@ func TestFind_NotFound(t *testing.T) {
 func TestGetFiles_Fail_Database(t *testing.T) {
 
 	// Save original to-be-mocked functions
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFilesDB := database.GetFiles
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1", "dataset2"},
 		}
 	}
@@ -129,7 +129,7 @@ func TestGetFiles_Fail_Database(t *testing.T) {
 	}
 
 	// Return mock functions to originals
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFiles = originalGetFilesDB
 
 }
@@ -137,11 +137,11 @@ func TestGetFiles_Fail_Database(t *testing.T) {
 func TestGetFiles_Fail_NotFound(t *testing.T) {
 
 	// Save original to-be-mocked functions
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1", "dataset2"},
 		}
 	}
@@ -166,18 +166,18 @@ func TestGetFiles_Fail_NotFound(t *testing.T) {
 	}
 
 	// Return mock functions to originals
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 }
 
 func TestGetFiles_Success(t *testing.T) {
 
 	// Save original to-be-mocked functions
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFilesDB := database.GetFiles
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1", "dataset2"},
 		}
 	}
@@ -211,7 +211,7 @@ func TestGetFiles_Success(t *testing.T) {
 	}
 
 	// Return mock functions to originals
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFiles = originalGetFilesDB
 
 }
@@ -449,15 +449,15 @@ func TestDownload_Fail_NoPermissions(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		// nolint:goconst
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{}
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{}
 	}
 
 	// Mock request and response holders
@@ -484,7 +484,7 @@ func TestDownload_Fail_NoPermissions(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 
 }
 
@@ -492,15 +492,15 @@ func TestDownload_Fail_GetFile(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFile := database.GetFile
 
 	// Substitute mock functions
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1"},
 		}
 	}
@@ -532,7 +532,7 @@ func TestDownload_Fail_GetFile(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFile = originalGetFile
 
 }
@@ -541,7 +541,7 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFile := database.GetFile
 	Backend, _ = storage.NewBackend(config.Config.Archive)
 
@@ -549,8 +549,8 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1"},
 		}
 	}
@@ -588,7 +588,7 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFile = originalGetFile
 
 }
@@ -597,7 +597,7 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFile := database.GetFile
 	originalParseCoordinates := parseCoordinates
 	config.Config.Archive.Posix.Location = "."
@@ -607,8 +607,8 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1"},
 		}
 	}
@@ -649,7 +649,7 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFile = originalGetFile
 	parseCoordinates = originalParseCoordinates
 
@@ -659,7 +659,7 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFile := database.GetFile
 	originalParseCoordinates := parseCoordinates
 	originalStitchFile := stitchFile
@@ -670,8 +670,8 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1"},
 		}
 	}
@@ -717,7 +717,7 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFile = originalGetFile
 	parseCoordinates = originalParseCoordinates
 	stitchFile = originalStitchFile
@@ -728,7 +728,7 @@ func TestDownload_Success(t *testing.T) {
 
 	// Save original to-be-mocked functions
 	originalCheckFilePermission := database.CheckFilePermission
-	originalGetDatasets := middleware.GetDatasets
+	originalGetCacheFromContext := middleware.GetCacheFromContext
 	originalGetFile := database.GetFile
 	originalParseCoordinates := parseCoordinates
 	originalStitchFile := stitchFile
@@ -740,8 +740,8 @@ func TestDownload_Success(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
-		return session.DatasetCache{
+	middleware.GetCacheFromContext = func(ctx *gin.Context) session.Cache {
+		return session.Cache{
 			Datasets: []string{"dataset1"},
 		}
 	}
@@ -791,7 +791,7 @@ func TestDownload_Success(t *testing.T) {
 
 	// Return mock functions to originals
 	database.CheckFilePermission = originalCheckFilePermission
-	middleware.GetDatasets = originalGetDatasets
+	middleware.GetCacheFromContext = originalGetCacheFromContext
 	database.GetFile = originalGetFile
 	parseCoordinates = originalParseCoordinates
 	stitchFile = originalStitchFile

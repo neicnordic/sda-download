@@ -94,8 +94,8 @@ func ListBuckets(c *gin.Context) {
 	}
 
 	buckets := []Bucket{}
-	datasetCache := middleware.GetDatasets(c)
-	for _, dataset := range datasetCache.Datasets {
+	cache := middleware.GetCacheFromContext(c)
+	for _, dataset := range cache.Datasets {
 		datasetInfo, err := database.GetDatasetInfo(dataset)
 		if err != nil {
 			log.Errorf("Failed to get dataset information: %v", err)
@@ -123,8 +123,8 @@ func ListObjects(c *gin.Context) {
 	dataset := c.Param("dataset")
 
 	allowed := false
-	datasetCache := middleware.GetDatasets(c)
-	for _, known := range datasetCache.Datasets {
+	cache := middleware.GetCacheFromContext(c)
+	for _, known := range cache.Datasets {
 		if dataset == known {
 			allowed = true
 
@@ -244,8 +244,8 @@ func parseParams(c *gin.Context) *gin.Context {
 		path = string(protocolPattern.ReplaceAll([]byte(path), []byte("$1/$2")))
 	}
 
-	datasetCache := middleware.GetDatasets(c)
-	for _, dataset := range datasetCache.Datasets {
+	cache := middleware.GetCacheFromContext(c)
+	for _, dataset := range cache.Datasets {
 		// check that the path starts with the dataset name, but also that the
 		// path is only the dataset, or that the following character is a slash.
 		// This prevents wrong matches in cases like when one dataset name is a
