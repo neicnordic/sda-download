@@ -15,6 +15,7 @@ import (
 	"github.com/neicnordic/sda-download/api/middleware"
 	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
+	"github.com/neicnordic/sda-download/internal/session"
 	"github.com/neicnordic/sda-download/internal/storage"
 )
 
@@ -24,14 +25,16 @@ func TestDatasets(t *testing.T) {
 	originalGetDatasets := middleware.GetDatasets
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(c *gin.Context) []string {
-		return []string{"dataset1", "dataset2"}
+	middleware.GetDatasets = func(c *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1", "dataset2"},
+		}
 	}
 
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	c.Set("datasets", []string{"dataset1", "dataset2"})
+	c.Set("datasets", session.DatasetCache{Datasets: []string{"dataset1", "dataset2"}})
 
 	// Test the outcomes of the handler
 	Datasets(c)
@@ -97,8 +100,10 @@ func TestGetFiles_Fail_Database(t *testing.T) {
 	originalGetFilesDB := database.GetFiles
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1", "dataset2"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1", "dataset2"},
+		}
 	}
 	database.GetFiles = func(datasetID string) ([]*database.FileInfo, error) {
 		return nil, errors.New("something went wrong")
@@ -135,8 +140,10 @@ func TestGetFiles_Fail_NotFound(t *testing.T) {
 	originalGetDatasets := middleware.GetDatasets
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1", "dataset2"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1", "dataset2"},
+		}
 	}
 
 	// Run test target
@@ -169,8 +176,10 @@ func TestGetFiles_Success(t *testing.T) {
 	originalGetFilesDB := database.GetFiles
 
 	// Substitute mock functions
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1", "dataset2"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1", "dataset2"},
+		}
 	}
 	database.GetFiles = func(datasetID string) ([]*database.FileInfo, error) {
 		fileInfo := database.FileInfo{
@@ -447,8 +456,8 @@ func TestDownload_Fail_NoPermissions(t *testing.T) {
 		// nolint:goconst
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{}
 	}
 
 	// Mock request and response holders
@@ -490,8 +499,10 @@ func TestDownload_Fail_GetFile(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1"},
+		}
 	}
 	database.GetFile = func(fileID string) (*database.FileDownload, error) {
 		return nil, errors.New("database error")
@@ -538,8 +549,10 @@ func TestDownload_Fail_OpenFile(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1"},
+		}
 	}
 	database.GetFile = func(fileID string) (*database.FileDownload, error) {
 		fileDetails := &database.FileDownload{
@@ -594,8 +607,10 @@ func TestDownload_Fail_ParseCoordinates(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1"},
+		}
 	}
 	database.GetFile = func(fileID string) (*database.FileDownload, error) {
 		fileDetails := &database.FileDownload{
@@ -655,8 +670,10 @@ func TestDownload_Fail_StreamFile(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1"},
+		}
 	}
 	database.GetFile = func(fileID string) (*database.FileDownload, error) {
 		fileDetails := &database.FileDownload{
@@ -723,8 +740,10 @@ func TestDownload_Success(t *testing.T) {
 	database.CheckFilePermission = func(fileID string) (string, error) {
 		return "dataset1", nil
 	}
-	middleware.GetDatasets = func(ctx *gin.Context) []string {
-		return []string{"dataset1"}
+	middleware.GetDatasets = func(ctx *gin.Context) session.DatasetCache {
+		return session.DatasetCache{
+			Datasets: []string{"dataset1"},
+		}
 	}
 	database.GetFile = func(fileID string) (*database.FileDownload, error) {
 		fileDetails := &database.FileDownload{

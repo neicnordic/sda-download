@@ -23,11 +23,11 @@ func TokenMiddleware() gin.HandlerFunc {
 		if err != nil {
 			log.Debugf("no session cookie received")
 		}
-		var datasets []string
+		var datasetCache session.DatasetCache
 		var exists bool
 		if sessionCookie != "" {
 			log.Debug("session cookie received")
-			datasets, exists = session.Get(sessionCookie)
+			datasetCache, exists = session.Get(sessionCookie)
 		}
 
 		if !exists {
@@ -57,11 +57,14 @@ func TokenMiddleware() gin.HandlerFunc {
 			// 200 OK with [] empty dataset list, when listing datasets (use case for sda-filesystem download tool)
 			// 404 dataset not found, when listing files from a dataset
 			// 401 unauthorised, when downloading a file
-			datasets = auth.GetPermissions(*visas)
+			datasets := auth.GetPermissions(*visas)
+			datasetCache = session.DatasetCache{
+				Datasets: datasets,
+			}
 
 			// Start a new session and store datasets under the session key
 			key := session.NewSessionKey()
-			session.Set(key, datasets)
+			session.Set(key, datasetCache)
 			c.SetCookie(config.Config.Session.Name, // name
 				key, // value
 				int(config.Config.Session.Expiration)/1e9, // max age
@@ -74,7 +77,7 @@ func TokenMiddleware() gin.HandlerFunc {
 		}
 
 		// Store dataset list to request context, for use in the endpoint handlers
-		c = storeDatasets(c, datasets)
+		c = storeDatasets(c, datasetCache)
 
 		// Forward request to the next endpoint handler
 		c.Next()
@@ -83,7 +86,7 @@ func TokenMiddleware() gin.HandlerFunc {
 }
 
 // storeDatasets stores the dataset list to the request context
-func storeDatasets(c *gin.Context, datasets []string) *gin.Context {
+func storeDatasets(c *gin.Context, datasets session.DatasetCache) *gin.Context {
 	log.Debugf("storing %v datasets to request context", datasets)
 
 	c.Set(datasetsKey, datasets)
@@ -92,10 +95,13 @@ func storeDatasets(c *gin.Context, datasets []string) *gin.Context {
 }
 
 // GetDatasets extracts the dataset list from the request context
-var GetDatasets = func(c *gin.Context) []string {
-	datasets := c.GetStringSlice(datasetsKey)
+var GetDatasets = func(c *gin.Context) session.DatasetCache {
+	var datasetCache session.DatasetCache
+	cached, exists := c.Get(datasetsKey)
+	if exists {
+		datasetCache = cached.(session.DatasetCache)
+	}
+	log.Debugf("returning %v from request context", cached)
 
-	log.Debugf("returning %v from request context", datasets)
-
-	return datasets
+	return datasetCache
 }
