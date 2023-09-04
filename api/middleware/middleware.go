@@ -10,11 +10,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var datasetsKey = "datasets"
+// requestContextKey holds a name for the request context storage key
+// which is used to store and get the permissions after passing middleware
+const requestContextKey = "requestContextKey"
 
 // TokenMiddleware performs access token verification and validation
 // JWTs are verified and validated by the app, opaque tokens are sent to AAI for verification
-// Successful auth results in list of authorised datasets
+// Successful auth results in list of authorised datasets.
+// The datasets are stored into a session cache for subsequent requests, and also
+// to the current request context for use in the endpoints.
 func TokenMiddleware() gin.HandlerFunc {
 
 	return func(c *gin.Context) {
@@ -23,11 +27,11 @@ func TokenMiddleware() gin.HandlerFunc {
 		if err != nil {
 			log.Debugf("no session cookie received")
 		}
-		var datasetCache session.DatasetCache
+		var cache session.Cache
 		var exists bool
 		if sessionCookie != "" {
 			log.Debug("session cookie received")
-			datasetCache, exists = session.Get(sessionCookie)
+			cache, exists = session.Get(sessionCookie)
 		}
 
 		if !exists {
@@ -57,14 +61,11 @@ func TokenMiddleware() gin.HandlerFunc {
 			// 200 OK with [] empty dataset list, when listing datasets (use case for sda-filesystem download tool)
 			// 404 dataset not found, when listing files from a dataset
 			// 401 unauthorised, when downloading a file
-			datasets := auth.GetPermissions(*visas)
-			datasetCache = session.DatasetCache{
-				Datasets: datasets,
-			}
+			cache.Datasets = auth.GetPermissions(*visas)
 
 			// Start a new session and store datasets under the session key
 			key := session.NewSessionKey()
-			session.Set(key, datasetCache)
+			session.Set(key, cache)
 			c.SetCookie(config.Config.Session.Name, // name
 				key, // value
 				int(config.Config.Session.Expiration)/1e9, // max age
@@ -77,7 +78,8 @@ func TokenMiddleware() gin.HandlerFunc {
 		}
 
 		// Store dataset list to request context, for use in the endpoint handlers
-		c = storeDatasets(c, datasetCache)
+		log.Debugf("storing %v to request context", cache)
+		c.Set(requestContextKey, cache)
 
 		// Forward request to the next endpoint handler
 		c.Next()
@@ -85,23 +87,16 @@ func TokenMiddleware() gin.HandlerFunc {
 
 }
 
-// storeDatasets stores the dataset list to the request context
-func storeDatasets(c *gin.Context, datasets session.DatasetCache) *gin.Context {
-	log.Debugf("storing %v datasets to request context", datasets)
-
-	c.Set(datasetsKey, datasets)
-
-	return c
-}
-
-// GetDatasets extracts the dataset list from the request context
-var GetDatasets = func(c *gin.Context) session.DatasetCache {
-	var datasetCache session.DatasetCache
-	cached, exists := c.Get(datasetsKey)
+// GetCacheFromContext is a helper function that endpoints can use to get data
+// stored to the *current* request context (not the session storage).
+// The request context was populated by the middleware, which in turn uses the session storage.
+var GetCacheFromContext = func(c *gin.Context) session.Cache {
+	var cache session.Cache
+	cached, exists := c.Get(requestContextKey)
 	if exists {
-		datasetCache = cached.(session.DatasetCache)
+		cache = cached.(session.Cache)
 	}
 	log.Debugf("returning %v from request context", cached)
 
-	return datasetCache
+	return cache
 }
