@@ -222,6 +222,9 @@ func GetObject(c *gin.Context) {
 
 	// set the fileID so that download knows what file to download
 	c.Params = append(c.Params, gin.Param{Key: "fileid", Value: fileInfo.FileID})
+	if strings.Contains(c.Request.URL.String(), "header") {
+		c.Params = append(c.Params, gin.Param{Key: "type", Value: "header"})
+	}
 
 	// Download the file
 	sda.Download(c)

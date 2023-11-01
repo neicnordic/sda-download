@@ -43,6 +43,7 @@ func Setup() *http.Server {
 	router.HEAD("/s3/*path", SelectedMiddleware(), s3.Download)
 	router.GET("/s3-encrypted/*path", SelectedMiddleware(), s3.Download)
 	router.GET("/health", healthResponse)
+	router.GET("/header/*path", SelectedMiddleware(), s3.Download)
 
 	// Configure TLS settings
 	log.Info("(3/5) Configuring TLS")
