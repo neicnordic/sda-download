@@ -31,6 +31,9 @@ authors:
   - name: Marko Malenic
     orcid: 0009-0007-3824-8449
     affiliation: 4
+  - name: Teemu Kataja
+    orcid: 0009-0001-1434-0415
+    affiliation: 1
 
 affiliations:
  - name: CSC – IT CENTER FOR SCIENCE, Espoo, Finland
