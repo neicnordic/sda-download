@@ -198,16 +198,46 @@ func Download(c *gin.Context) {
 		return
 	}
 
-	// Stitch file and prepare it for streaming
-	fileStream, err := stitchFile(fileDetails.Header, file, coordinates)
-	if err != nil {
-		log.Errorf("could not prepare file for streaming, %s", err)
-		c.String(http.StatusInternalServerError, "file stream error")
+	var fileStream io.Reader
+	switch c.Param("type") {
+	case "encrypted":
+		log.Print("Return encrypted file")
+		fileStream, err = stitchEncryptedFile(fileDetails.Header, file, coordinates)
+		if err != nil {
+			log.Errorf("could not prepare file for streaming, %s", err)
+			c.String(http.StatusInternalServerError, "file stream error")
 
-		return
+			return
+		}
+		c.Header("Content-Length", "")
+	default:
+		// Stitch file and prepare it for streaming
+		fileStream, err = stitchFile(fileDetails.Header, file, coordinates)
+		if err != nil {
+			log.Errorf("could not prepare file for streaming, %s", err)
+			c.String(http.StatusInternalServerError, "file stream error")
+
+			return
+		}
 	}
 
 	sendStream(c.Writer, fileStream)
+}
+
+// stitchFile stitches the header and file body together for Crypt4GHReader
+// and returns a streamable Reader
+var stitchEncryptedFile = func(header []byte, file io.ReadCloser, coordinates *headers.DataEditListHeaderPacket) (io.Reader, error) {
+	log.Debugf("stitching header to file %s for streaming", file)
+	// Stitch header and file body together
+	hr := bytes.NewReader(header)
+
+	encryptedFile := io.MultiReader(hr, io.MultiReader(hr, file))
+
+	log.Print("Encrypted file:", encryptedFile)
+
+	log.Debugf("file stream for %s constructed", file)
+
+	return encryptedFile, nil
 }
 
 // stitchFile stitches the header and file body together for Crypt4GHReader
