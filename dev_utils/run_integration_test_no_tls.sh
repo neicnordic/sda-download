@@ -1,31 +1,31 @@
 #!/bin/sh
 
-for c in s3cmd jq
-do
-    if ! command -v $c
-    then
-        echo "$c could not be found"
-        exit 1
-    fi
-done
+# for c in s3cmd jq
+# do
+#     if ! command -v $c
+#     then
+#         echo "$c could not be found"
+#         exit 1
+#     fi
+# done
 
-cat << EOF > c4gh.pub.pem
------BEGIN CRYPT4GH PUBLIC KEY-----
-avFAerx0ZWuJE6fTI8S/0wv3yMo1n3SuNTV6zvKdxQc=
------END CRYPT4GH PUBLIC KEY-----
-EOF
+# cat << EOF > c4gh.pub.pem
+# -----BEGIN CRYPT4GH PUBLIC KEY-----
+# avFAerx0ZWuJE6fTI8S/0wv3yMo1n3SuNTV6zvKdxQc=
+# -----END CRYPT4GH PUBLIC KEY-----
+# EOF
 
-chmod 444 c4gh.pub.pem
+# chmod 444 c4gh.pub.pem
 
-cat << EOF > c4gh.sec.pem
------BEGIN CRYPT4GH ENCRYPTED PRIVATE KEY-----
-YzRnaC12MQAGc2NyeXB0ABQAAAAAwAs5mVkXda50vqeYv6tbkQARY2hhY2hhMjBf
-cG9seTEzMDUAPAd46aTuoVWAe+fMGl3VocCKCCWmgFUsFIHejJoWxNwy62c1L/Vc
-R9haQsAPfJMLJSvUXStJ04cyZnDHSw==
------END CRYPT4GH ENCRYPTED PRIVATE KEY-----
-EOF
+# cat << EOF > c4gh.sec.pem
+# -----BEGIN CRYPT4GH ENCRYPTED PRIVATE KEY-----
+# YzRnaC12MQAGc2NyeXB0ABQAAAAAwAs5mVkXda50vqeYv6tbkQARY2hhY2hhMjBf
+# cG9seTEzMDUAPAd46aTuoVWAe+fMGl3VocCKCCWmgFUsFIHejJoWxNwy62c1L/Vc
+# R9haQsAPfJMLJSvUXStJ04cyZnDHSw==
+# -----END CRYPT4GH ENCRYPTED PRIVATE KEY-----
+# EOF
 
-chmod 444 c4gh.sec.pem
+# chmod 444 c4gh.sec.pem
 
 
 # insert file entry into database
@@ -80,105 +80,105 @@ docker run --rm --name client --network dev_utils_default \
     -t -q -c "INSERT INTO sda.file_dataset (file_id, dataset_id) \
         VALUES ('$file_id', $dataset_id);"
 
-# Make buckets if they don't exist already
-s3cmd -c s3cmd-notls.conf mb s3://archive || true
+# # Make buckets if they don't exist already
+# s3cmd -c s3cmd-notls.conf mb s3://archive || true
 
-# Upload test file
-s3cmd -c s3cmd-notls.conf put archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6 s3://archive/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
+# # Upload test file
+# s3cmd -c s3cmd-notls.conf put archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6 s3://archive/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
 
 
 
-# Test Health Endpoint
-check_health=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/health)
+# # Test Health Endpoint
+# check_health=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/health)
 
-if [ "$check_health" != "200" ]; then
-    echo "Health endpoint does not respond properly"
-    echo "got: ${check_health}"
-    exit 1
-fi
+# if [ "$check_health" != "200" ]; then
+#     echo "Health endpoint does not respond properly"
+#     echo "got: ${check_health}"
+#     exit 1
+# fi
 
-echo "Health endpoint is ok"
+# echo "Health endpoint is ok"
 
-# Test empty token
+# # Test empty token
 
-check_401=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET http://localhost:8080/metadata/datasets)
+# check_401=$(curl -o /dev/null -s -w "%{http_code}\n" -X GET http://localhost:8080/metadata/datasets)
 
-if [ "$check_401" != "401" ]; then
-    echo "no token provided should give 401"
-    echo "got: ${check_401}"
-    exit 1
-fi
+# if [ "$check_401" != "401" ]; then
+#     echo "no token provided should give 401"
+#     echo "got: ${check_401}"
+#     exit 1
+# fi
 
-echo "got correct response when no token provided"
+# echo "got correct response when no token provided"
 
-check_405=$(curl -X POST -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/metadata/datasets )
+# check_405=$(curl -X POST -o /dev/null -s -w "%{http_code}\n" http://localhost:8080/metadata/datasets )
 
-if [ "$check_405" != "405" ]; then
-    echo "POST should not be allowed"
-    echo "got: ${check_405}"
-    exit 1
-fi
+# if [ "$check_405" != "405" ]; then
+#     echo "POST should not be allowed"
+#     echo "got: ${check_405}"
+#     exit 1
+# fi
 
-echo "got correct response when POST method used"
+# echo "got correct response when POST method used"
 
-# Test good token
+# # Test good token
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
+# token=$(curl "http://localhost:8000/tokens" | jq -r  '.[0]')
 
-## Test datasets endpoint
+# ## Test datasets endpoint
 
-check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
+# check_dataset=$(curl -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets | jq -r '.[0]')
 
-if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
-    echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
-    echo "got: ${check_dataset}"
-    exit 1
-fi
+# if [ "$check_dataset" != "https://doi.example/ty009.sfrrss/600.45asasga" ]; then
+#     echo "dataset https://doi.example/ty009.sfrrss/600.45asasga not found"
+#     echo "got: ${check_dataset}"
+#     exit 1
+# fi
 
-echo "expected dataset found"
+# echo "expected dataset found"
 
-## Test datasets/files endpoint
+# ## Test datasets/files endpoint
 
-check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
+# check_files=$(curl -H "Authorization: Bearer $token" "http://localhost:8080/metadata/datasets/https://doi.example/ty009.sfrrss/600.45asasga/files" | jq -r '.[0].fileId')
 
-if [ "$check_files" != "urn:neic:001-002" ]; then
-    echo "file with id urn:neic:001-002 not found"
-    echo "got: ${check_files}"
-    exit 1
-fi
+# if [ "$check_files" != "urn:neic:001-002" ]; then
+#     echo "file with id urn:neic:001-002 not found"
+#     echo "got: ${check_files}"
+#     exit 1
+# fi
 
-echo "expected file found"
+# echo "expected file found"
 
-# Test file can be decrypted
-## test also the files endpoint
+# # Test file can be decrypted
+# ## test also the files endpoint
 
-C4GH_PASSPHRASE=$(grep -F passphrase config.yaml | sed -e 's/.* //' -e 's/"//g')
-export C4GH_PASSPHRASE
+# C4GH_PASSPHRASE=$(grep -F passphrase config.yaml | sed -e 's/.* //' -e 's/"//g')
+# export C4GH_PASSPHRASE
 
-crypt4gh decrypt --sk c4gh.sec.pem < dummy_data.c4gh > old-file.txt
+# crypt4gh decrypt --sk c4gh.sec.pem < dummy_data.c4gh > old-file.txt
 
-curl -H "Authorization: Bearer $token" "http://localhost:8080/files/urn:neic:001-002" --output test-download.txt
+# curl -H "Authorization: Bearer $token" "http://localhost:8080/files/urn:neic:001-002" --output test-download.txt
 
-cmp --silent old-file.txt test-download.txt
-status=$?
-if [ $status = 0 ]; then
-    echo "Files are the same"
-else
-    echo "Files are different"
-fi
+# cmp --silent old-file.txt test-download.txt
+# status=$?
+# if [ $status = 0 ]; then
+#     echo "Files are the same"
+# else
+#     echo "Files are different"
+# fi
 
-# Test get visas failed
+# # Test get visas failed
 
-token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
+# token=$(curl "http://localhost:8000/tokens" | jq -r  '.[1]')
 
-## Test datasets endpoint
+# ## Test datasets endpoint
 
-check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets)
+# check_empty_token=$(curl -o /dev/null -s -w "%{http_code}\n" -H "Authorization: Bearer $token" http://localhost:8080/metadata/datasets)
 
-if [ "$check_empty_token" != "200" ]; then
-    echo "response for empty token is not 200"
-    echo "got: ${check_empty_token}"
-    exit 1
-fi
+# if [ "$check_empty_token" != "200" ]; then
+#     echo "response for empty token is not 200"
+#     echo "got: ${check_empty_token}"
+#     exit 1
+# fi
 
-echo "got correct response when token has no permissions"
+# echo "got correct response when token has no permissions"

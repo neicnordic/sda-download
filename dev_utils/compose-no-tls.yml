@@ -1,5 +1,4 @@
 services:
-
   db:
     command: server /data
     container_name: db
@@ -19,48 +18,68 @@ services:
     volumes:
       - /tmp/data:/data
 
-  s3:
-    command: server /data
-    container_name: s3
-    environment:
-      - MINIO_ACCESS_KEY=access
-      - MINIO_SECRET_KEY=secretkey
-    healthcheck:
-      test: ["CMD", "curl", "-fq", "http://localhost:9000/minio/health/live"]
-      interval: 5s
-      timeout: 20s
-      retries: 3
-    image: minio/minio:RELEASE.2021-11-24T23-19-33Z
-    ports:
-      - "9000:9000"
+  # s3:
+  #   command: server /data
+  #   container_name: s3
+  #   environment:
+  #     - MINIO_ACCESS_KEY=access
+  #     - MINIO_SECRET_KEY=secretkey
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-fq", "http://localhost:9000/minio/health/live"]
+  #     interval: 5s
+  #     timeout: 20s
+  #     retries: 3
+  #   image: minio/minio:RELEASE.2021-11-24T23-19-33Z
+  #   ports:
+  #     - "9000:9000"
 
-  createbucket:
-    container_name: buckets
-    image: minio/mc
-    depends_on:
-      s3:
-        condition: service_healthy
-    entrypoint: >
-      /bin/sh -c "
-      /usr/bin/mc config host add s3 http://s3:9000 access secretkey;
-      /usr/bin/mc mb s3/archive;
-      exit 0;
-      "
-    restart: on-failure
+  # createbucket:
+  #   container_name: buckets
+  #   image: minio/mc
+  #   depends_on:
+  #     s3:
+  #       condition: service_healthy
+  #   entrypoint: >
+  #     /bin/sh -c "
+  #     /usr/bin/mc config host add s3 http://s3:9000 access secretkey;
+  #     /usr/bin/mc mb s3/archive;
+  #     exit 0;
+  #     "
+  #   restart: on-failure
 
-  download:
-    command: sda-download
-    container_name: download
+  # download:
+  #   command: sda-download
+  #   container_name: download
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     s3:
+  #       condition: service_healthy
+  #     mockauth:
+  #       condition: service_started
+  #   environment:
+  #     - ARCHIVE_URL=http://s3
+  #     - ARCHIVE_TYPE=s3
+  #     - DB_HOST=db
+  #   image: neicnordic/sda-download:latest
+  #   build:
+  #     context: ..
+  #   volumes:
+  #     - ./config-notls.yaml:/config.yaml
+  #     - ./:/dev_utils/
+  #     - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
+  #   mem_limit: 256m
+  #   ports:
+  #     - "8080:8080"
+  #   restart: always
+
+  reencrypt:
+    command: sda-reencrypt
+    container_name: reencrypt
     depends_on:
       db:
         condition: service_healthy
-      s3:
-        condition: service_healthy
-      mockauth:
-        condition: service_started
     environment:
-      - ARCHIVE_URL=http://s3
-      - ARCHIVE_TYPE=s3
       - DB_HOST=db
     image: neicnordic/sda-download:latest
     build:
@@ -68,28 +87,26 @@ services:
     volumes:
       - ./config-notls.yaml:/config.yaml
       - ./:/dev_utils/
-      - ./archive_data/4293c9a7-dc50-46db-b79a-27ddc0dad1c6:/tmp/4293c9a7-dc50-46db-b79a-27ddc0dad1c6
     mem_limit: 256m
     ports:
-      - "8080:8080"
+      - "5051:5051"
     restart: always
 
-  mockauth:
-    command:
-      - /bin/sh
-      - -c
-      - |
-        pip install --upgrade pip
-        pip install aiohttp Authlib
-        python -u /mockoidc.py
-    container_name: mockauth
-    image: python:3.10-slim
-    volumes:
-      - ./mockoidc/mockoidc.py:/mockoidc.py
-    mem_limit: 256m
-    ports:
-      - "8000:8000"
-    restart: always
-
-volumes:
-  archive:
+  # mockauth:
+  #   command:
+  #     - /bin/sh
+  #     - -c
+  #     - |
+  #       pip install --upgrade pip
+  #       pip install aiohttp Authlib
+  #       python -u /mockoidc.py
+  #   container_name: mockauth
+  #   image: python:3.10-slim
+  #   volumes:
+  #     - ./mockoidc/mockoidc.py:/mockoidc.py
+  #   mem_limit: 256m
+  #   ports:
+  #     - "8000:8000"
+  #   restart: always
+# volumes:
+#   archive:

@@ -18,7 +18,7 @@ func init() {
 	log.Info("(1/5) Loading configuration")
 
 	// Load configuration
-	conf, err := config.NewConfig()
+	conf, err := config.NewConfig("download")
 	if err != nil {
 		log.Panicf("configuration loading failed, reason: %v", err)
 	}

@@ -41,7 +41,7 @@ func TestConfigTestSuite(t *testing.T) {
 
 func (suite *TestSuite) TestConfigFile() {
 	viper.Set("configFile", "test")
-	config, err := NewConfig()
+	config, err := NewConfig("download")
 	assert.Nil(suite.T(), config)
 	assert.Error(suite.T(), err)
 	assert.Equal(suite.T(), "test", viper.ConfigFileUsed())
@@ -52,7 +52,7 @@ func (suite *TestSuite) TestMissingRequiredConfVar() {
 		requiredConfVarValue := viper.Get(requiredConfVar)
 		viper.Set(requiredConfVar, nil)
 		expectedError := fmt.Errorf("%s not set", requiredConfVar)
-		config, err := NewConfig()
+		config, err := NewConfig("download")
 		assert.Nil(suite.T(), config)
 		if assert.Error(suite.T(), err) {
 			assert.Equal(suite.T(), expectedError, err)

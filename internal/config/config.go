@@ -34,6 +34,7 @@ type Map struct {
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
 	Archive storage.Conf
+	Grpc    GrpcConfig
 }
 
 type AppConfig struct {
@@ -60,6 +61,10 @@ type AppConfig struct {
 	// Selected middleware for authentication and authorizaton
 	// Optional. Default value is "default" for TokenMiddleware
 	Middleware string
+}
+
+type GrpcConfig struct {
+	AppConfig
 }
 
 type SessionConfig struct {
@@ -139,7 +144,9 @@ type DatabaseConfig struct {
 }
 
 // NewConfig populates ConfigMap with data
-func NewConfig() (*Map, error) {
+func NewConfig(app string) (*Map, error) {
+	var requiredConfVars []string
+
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
@@ -162,21 +169,6 @@ func NewConfig() (*Map, error) {
 			return nil, err
 		}
 	}
-	requiredConfVars := []string{
-		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
-	}
-
-	if viper.GetString("archive.type") == S3 {
-		requiredConfVars = append(requiredConfVars, []string{"archive.url", "archive.accesskey", "archive.secretkey", "archive.bucket"}...)
-	} else if viper.GetString("archive.type") == POSIX {
-		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
-	}
-
-	for _, s := range requiredConfVars {
-		if !viper.IsSet(s) || viper.GetString(s) == "" {
-			return nil, fmt.Errorf("%s not set", s)
-		}
-	}
 
 	if viper.IsSet("log.format") {
 		if viper.GetString("log.format") == "json" {
@@ -196,22 +188,60 @@ func NewConfig() (*Map, error) {
 		log.Printf("Setting log level to '%s'", stringLevel)
 	}
 
-	c := &Map{}
-	c.applyDefaults()
-	c.sessionConfig()
-	c.configArchive()
-	err := c.configureOIDC()
-	if err != nil {
-		return nil, err
-	}
-	err = c.appConfig()
-	if err != nil {
-		return nil, err
+	switch app {
+	case "download":
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
+		}
+	case "reencrypt":
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase",
+		}
+	default:
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
+		}
 	}
 
-	err = c.configDatabase()
-	if err != nil {
-		return nil, err
+	if viper.GetString("archive.type") == S3 {
+		requiredConfVars = append(requiredConfVars, []string{"archive.url", "archive.accesskey", "archive.secretkey", "archive.bucket"}...)
+	} else if viper.GetString("archive.type") == POSIX {
+		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
+	}
+
+	for _, s := range requiredConfVars {
+		if !viper.IsSet(s) || viper.GetString(s) == "" {
+			return nil, fmt.Errorf("%s not set", s)
+		}
+	}
+	c := &Map{}
+	c.applyDefaults()
+	switch app {
+	case "download":
+		c.sessionConfig()
+		c.configArchive()
+		err := c.configureOIDC()
+		if err != nil {
+			return nil, err
+		}
+		err = c.appConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		err = c.configDatabase()
+		if err != nil {
+			return nil, err
+		}
+	case "reencrypt":
+		err := c.configDatabase()
+		if err != nil {
+			return nil, err
+		}
+		err = c.grpcServerConfig()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, nil
@@ -222,6 +252,8 @@ func NewConfig() (*Map, error) {
 func (c *Map) applyDefaults() {
 	viper.SetDefault("app.host", "0.0.0.0")
 	viper.SetDefault("app.port", 8080)
+	viper.SetDefault("grpc.server.host", "0.0.0.0")
+	viper.SetDefault("grpc.server.port", 5051)
 	viper.SetDefault("app.middleware", "default")
 	viper.SetDefault("session.expiration", -1)
 	viper.SetDefault("session.secure", true)
@@ -319,6 +351,28 @@ func (c *Map) appConfig() error {
 	if !slices.Contains(availableMiddlewares, c.App.Middleware) {
 		err := fmt.Errorf("app.middleware value=%v is not one of allowed values=%v", c.App.Middleware, availableMiddlewares)
 
+		return err
+	}
+
+	return nil
+}
+
+// grpc-server sets required settings
+func (c *Map) grpcServerConfig() error {
+	c.Grpc.Host = viper.GetString("grpc.server.host")
+	c.Grpc.Port = viper.GetInt("grpc.server.port")
+	c.Grpc.ServerCert = viper.GetString("grpc.server.servercert")
+	c.Grpc.ServerKey = viper.GetString("grpc.server.serverkey")
+
+	if c.Grpc.Port != 443 && c.Grpc.Port != 5051 {
+		c.Grpc.Port = viper.GetInt("grpc.server.port")
+	} else if c.Grpc.ServerCert != "" && c.App.ServerKey != "" {
+		c.Grpc.Port = 443
+	}
+
+	var err error
+	c.Grpc.Crypt4GHKey, err = GetC4GHKey()
+	if err != nil {
 		return err
 	}
 

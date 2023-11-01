@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+option go_package = "github.com/neicnordic/sda-download/internal/reencrypt";
+
+package reencrypt;
+
+// The Reencrypt service definition.
+service Reencrypt {
+  // Sends the re-encrypted header back
+  rpc ReencryptHeader (ReencryptRequest) returns (ReencryptResponse) {}
+}
+
+// The request message containing the required input
+message ReencryptRequest {
+  string publickey = 1;
+  string fileid = 2;
+}
+
+// The response message containing the re-encrypted header
+message ReencryptResponse {
+  bytes header = 1;
+}
