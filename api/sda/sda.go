@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/biogo/hts/bam"
 	"github.com/gin-gonic/gin"
 	"github.com/neicnordic/crypt4gh/model/headers"
 	"github.com/neicnordic/crypt4gh/streaming"
@@ -220,7 +221,23 @@ func Download(c *gin.Context) {
 			return
 		}
 	}
+	if c.Param("type") == "header" {
+		bamReader, err := bam.NewReader(fileStream, 0)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		defer bamReader.Close()
+		reader := bamReader
+		h := reader.Header()
+		var r io.Reader
+		buf := new(bytes.Buffer)
+		fmt.Fprint(buf, h)
+		r = buf
+		sendStream(c.Writer, r)
 
+		return
+
+	}
 	sendStream(c.Writer, fileStream)
 }
 
