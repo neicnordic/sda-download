@@ -221,6 +221,7 @@ func Download(c *gin.Context) {
 			return
 		}
 	}
+	log.Debug("- - - - - - - test 1 - - - - - - - ")
 	if c.Param("type") == "header" {
 		bamReader, err := bam.NewReader(fileStream, 0)
 		if err != nil {
@@ -237,7 +238,21 @@ func Download(c *gin.Context) {
 
 		return
 
+	} else if c.Param("type") == "headersize" {
+		log.Debug("- - - - - - - test 2 - - - - - - - ")
+		head := fileDetails.Header
+		log.Debug("head: ", head)
+		//headlength := len(head)
+		headlength := bytes.NewReader(head)
+		log.Debug("headlength size: ", headlength.Size())
+		buf := new(bytes.Buffer)
+		len := strconv.Itoa(int(headlength.Size()))
+		fmt.Fprint(buf, len)
+		sendStream(c.Writer, buf)
+
+		return
 	}
+	log.Debug("- - - - - - - test 3 - - - - - - - ")
 	sendStream(c.Writer, fileStream)
 }
 

@@ -224,6 +224,8 @@ func GetObject(c *gin.Context) {
 	c.Params = append(c.Params, gin.Param{Key: "fileid", Value: fileInfo.FileID})
 	if strings.Contains(c.Request.URL.String(), "header") {
 		c.Params = append(c.Params, gin.Param{Key: "type", Value: "header"})
+	} else if strings.Contains(c.Request.URL.String(), "c4gheadsize") {
+		c.Params = append(c.Params, gin.Param{Key: "type", Value: "headersize"})
 	}
 
 	// Download the file
