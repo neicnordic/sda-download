@@ -4,18 +4,43 @@ tags:
   - replace with your own keywords
   - at least 3 is recommended
 authors:
-  - name: First Last
-    orcid: 0000-0000-0000-0000
+  - name: Johan Viklund
+    orcid: 0000-0003-1984-8522
+    affiliation: 3
+  - name: Stefan Negru
+    orcid: 0000-0002-6544-5022
     affiliation: 1
-  - name: Second Last
-    orcid: 0000-0000-0000-0000
+  - name: Dimitris Bampalikis
+    affiliation: 3
+    orcid: 0000-0002-2078-3079
+  - name: Liisa Lado-Villar
+    orcid:
+    affiliation: 1
+  - name: Alexandros Dimopoulos
+    orcid: 0000-0002-4602-2040
     affiliation: 2
+  - name: Konstantinos Koumpouras
+    orcid: 0000-0001-5598-4703
+    affiliation: 3
+  - name: Alexandros Aperis
+    orcid: 0000-0002-1699-2476
+    affiliation: 3
+  - name:  Panagiotis Chatzopoulos
+    orcid: 0009-0004-7445-2453
+    affiliation: 3
+  - name: Marko Malenic
+    orcid: 0009-0007-3824-8449
+    affiliation: 4
 
 affiliations:
- - name: Institution 1, address, city, country
-   index: 1
- - name: Institution 1, address, city, country
-   index: 2
+ - name: CSC – IT CENTER FOR SCIENCE, Espoo, Finland
+    index: 1
+  - name: Biomedical Sciences Research Center Alexander Fleming, Vari, Greece
+    index: 2
+  - name: National Bioinformatics Infrastructure Sweden (NBIS), Uppsala University, SciLifeLab, ICM - Department of Cell and Molecular Biology, Uppsala, Sweden.
+    index: 3
+  - name: University of Melbourne, Melbourne, AU 
+    index: 4
 date: 01 January 2020
 bibliography: paper.bib
 authors_short: Last et al. (2021) BioHackrXiv  template
