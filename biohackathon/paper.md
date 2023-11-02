@@ -50,17 +50,47 @@ event: BioHackathon Europe 2021
 
 # Introduction or Background
 
-The European Genome-phenome Archive (EGA) [@EGA] is a service for archiving and sharing personally identifiable genetic and phenotypic data, while the The Genomic Data Infrastructure (GDI) [@GDI] project is enabling access to genomic and related phenotypic and clinical data across Europe. Both projects are focused on creating federated and secure infrastructure for researchers to archive and share data with the research community, to support further research.
+The European Genome-phenome Archive (EGA) [@EGA] and it's extension the
+Federated EGA (FEGA) (@FEGA) are services for archiving and sharing personally
+identifiable genetic and phenotypic data, while The Genomic Data Infrastructure
+(GDI) [@GDI] project is enabling secondary use of genomic and phenotypic
+clinical data across Europe. Both projects are focused on creating federated
+and secure infrastructure for researchers to archive and share data with the
+research community, to support further research.
 
 
-The project was focused on the data access part of the infrastructure. The files are encrypted in the archives, using the crypt4gh standard [@crypt4gh]. Currently, there exist data access processes, where the files are either decrypted on the server side and then transferred to the user or re-encrypted server-side and provided to the user in an outbox.
+This project was focused on the data access part of the infrastructure. The
+files are encrypted in the archives, using the crypt4gh standard [@crypt4gh].
+Currently, we have a data access processes, where the files are either
+decrypted on the server side and then transferred to the user or re-encrypted
+server-side with the users public key and provided to the user in a dedicated
+outbox. This process is cumbersome and requires a lot of manual intervention by
+the archive operators. It's also not very granular, for example, in the case a
+user only wants access to just a small region of the genomic files we still
+provide the full reencrypted dataset, which is expensive in both human and
+computational resources.
 
 
-Htsget [@htsget] as a data access protocol also allows access to parts of files. Before the Biohackathon event, there did not exist any production-level client tools that supports access to encrypted data. The main goal of the project was to create a client tool that can access encrypted data over the htsget protocol, able to work with the GA4GH Passport and Visa standard, which enhances the security of the data access interfaces.
+Htsget [@htsget] as a data access protocol allows access to parts of files.
+Before the Biohackathon event, there were no htsget servers that supported
+partial access to encrypted data. Our goal of the project was to extend the
+htsget-rs [@htsget-rs] server and integrate it into the GDI starter kit to
+support GA4GH Passport authorized, re-encrypted access to partial files.
+
+
+BLA BLA BLA CLIENT
+create a client tool that can access encrypted data over the htsget protocol,
+able to work with the GA4GH Passport and Visa standard, which enhances the
+security of the data access interfaces.
+
 
 ## Subsection level 2
 
-In order to enable for random data access on encrypted files, we worked on the htsget-rs [@htsget-rs], a Rust htsget server to support the aforementioned standards and the sda-download, an implementation handling the data-out API of the archives, developed by the Nordic collaboration under the umbrella of the Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].
+In order to enable for random data access on encrypted files, we worked on the
+htsget-rs [@htsget-rs], a Rust htsget server to support the aforementioned
+standards and the sda-download, an implementation handling the data-out API of
+the archives, developed by the Nordic collaboration under the umbrella of the
+Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].
 
 
 ### Subsection level 3
