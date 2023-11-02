@@ -93,6 +93,23 @@ the archives, developed by the Nordic collaboration under the umbrella of the
 Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].
 
 
+```mermaid
+sequenceDiagram
+    Htsget Client->>Htsget Server: GET reference=chr1&start=0&end=200
+    activate Htsget Server
+    Htsget Server->>Htsget Client: URL tickets
+    deactivate Htsget Server
+    opt Get Htsget File info
+    Htsget Server->>Download API: HEAD (unencrypted file size)
+    activate Download API
+    Htsget Server->>Download API: GET (file index)
+    Htsget Server->>Download API: GET (underlying file header)
+    Htsget Server->>Download API: GET (crypt4gh header size)
+    deactivate Download API
+    end
+    Htsget Client->>Download API: GET File (HTTP HEADER Client-Public-Key)
+```
+
 ### Subsection level 3
 
 Please keep sections to a maximum of three levels.
