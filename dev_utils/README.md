@@ -1,7 +1,18 @@
 # Local testing howto
 
 ## Getting started locally
-In root repository
+The commands are run in root repository `cd sda-download`.
+First create the necessary credentials in dev_utils directory.
+
+```command
+cd dev_utils
+sh make_certs.sh
+```
+
+
+Return to app root
+`cd ../`
+
 
 ```
 export CONFIGFILE="./dev_utils/config.yaml"
@@ -10,11 +21,8 @@ go run cmd/main.go
 
 This requires having the certificates generated and the database up.
 
-First create the necessary credentials.
-
-```command
-sh make_certs.sh
-```
+> [!NOTE]
+> Download does not start if you have not run integrations tests, for there are no keys in place.
 
 ## Getting up and running fast with docker compose
 
@@ -26,6 +34,30 @@ For testing the API
 
 ```command
 sh run_integration_test_no_tls.sh
+```
+
+> [!NOTE]  
+> For Mac M1/M2 users the `dev_utils/compose.yml` file needs some modificatation to be used with ARM processor architecture. All the containers need to be build for `platform: "linux/arm64"` for running the Linux VM on top of M1/M2 ARM laptop. Also the used binaries and base images need to be compiled/build for ARM. As an example the part for S3 container is below, do note the selected version being build as multiplatform container version and added port exposing change.
+
+```command
+s3:
+    platform: "linux/arm64"
+    command: server /data --console-address ":9001"
+    container_name: s3
+    environment:
+      - MINIO_ACCESS_KEY=access
+      - MINIO_SECRET_KEY=secretkey
+      - MINIO_SERVER_URL=https://127.0.0.1:9000
+    healthcheck:
+      test: ["CMD", "curl", "-fkq", "https://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 20s
+      retries: 3
+    image: minio/minio:RELEASE.2023-10-25T06-33-25Z
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+...
 ```
 
 ## Starting the services using docker compose with TLS enabled
