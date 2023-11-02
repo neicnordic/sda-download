@@ -139,7 +139,9 @@ type DatabaseConfig struct {
 }
 
 // NewConfig populates ConfigMap with data
-func NewConfig() (*Map, error) {
+func NewConfig(app string) (*Map, error) {
+	var requiredConfVars []string
+
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
 	viper.AutomaticEnv()
@@ -162,21 +164,6 @@ func NewConfig() (*Map, error) {
 			return nil, err
 		}
 	}
-	requiredConfVars := []string{
-		"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
-	}
-
-	if viper.GetString("archive.type") == S3 {
-		requiredConfVars = append(requiredConfVars, []string{"archive.url", "archive.accesskey", "archive.secretkey", "archive.bucket"}...)
-	} else if viper.GetString("archive.type") == POSIX {
-		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
-	}
-
-	for _, s := range requiredConfVars {
-		if !viper.IsSet(s) || viper.GetString(s) == "" {
-			return nil, fmt.Errorf("%s not set", s)
-		}
-	}
 
 	if viper.IsSet("log.format") {
 		if viper.GetString("log.format") == "json" {
@@ -196,22 +183,47 @@ func NewConfig() (*Map, error) {
 		log.Printf("Setting log level to '%s'", stringLevel)
 	}
 
-	c := &Map{}
-	c.applyDefaults()
-	c.sessionConfig()
-	c.configArchive()
-	err := c.configureOIDC()
-	if err != nil {
-		return nil, err
-	}
-	err = c.appConfig()
-	if err != nil {
-		return nil, err
+	switch app {
+	case "download":
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "oidc.configuration.url", "c4gh.filepath", "c4gh.passphrase",
+		}
+	default:
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
+		}
 	}
 
-	err = c.configDatabase()
-	if err != nil {
-		return nil, err
+	if viper.GetString("archive.type") == S3 {
+		requiredConfVars = append(requiredConfVars, []string{"archive.url", "archive.accesskey", "archive.secretkey", "archive.bucket"}...)
+	} else if viper.GetString("archive.type") == POSIX {
+		requiredConfVars = append(requiredConfVars, []string{"archive.location"}...)
+	}
+
+	for _, s := range requiredConfVars {
+		if !viper.IsSet(s) || viper.GetString(s) == "" {
+			return nil, fmt.Errorf("%s not set", s)
+		}
+	}
+	c := &Map{}
+	c.applyDefaults()
+	switch app {
+	case "download":
+		c.sessionConfig()
+		c.configArchive()
+		err := c.configureOIDC()
+		if err != nil {
+			return nil, err
+		}
+		err = c.appConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		err = c.configDatabase()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return c, nil
@@ -310,10 +322,12 @@ func (c *Map) appConfig() error {
 		c.App.Port = 443
 	}
 
-	var err error
-	c.App.Crypt4GHKey, err = GetC4GHKey()
-	if err != nil {
-		return err
+	if viper.IsSet("c4gh.filepath") && viper.IsSet("c4gh.passphrase") {
+		var err error
+		c.App.Crypt4GHKey, err = GetC4GHKey()
+		if err != nil {
+			return err
+		}
 	}
 
 	if !slices.Contains(availableMiddlewares, c.App.Middleware) {

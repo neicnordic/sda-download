@@ -5,7 +5,7 @@ ENV CGO_ENABLED=0
 
 COPY . .
 
-RUN go build -buildvcs=false -o ./sda-download ./cmd
+RUN set -ex; for p in cmd/*; do test -d "$p" && go build -buildvcs=false -o "sda-${p#cmd/}" "./$p"; done
 RUN echo "nobody:x:65534:65534:nobody:/:/sbin/nologin" > passwd
 
 FROM scratch
