@@ -50,13 +50,18 @@ event: BioHackathon Europe 2021
 
 # Introduction or Background
 
-Add to this section a couple of paragraphs introducing the work done dring the BioHackathon, CodeFest, VoCamp or Sprint event. Please add references whenever needed, for instance [@Katayama:2010].
+The European Genome-phenome Archive (EGA) [@EGA] is a service for archiving and sharing personally identifiable genetic and phenotypic data, while the The Genomic Data Infrastructure (GDI) [@GDI] project is enabling access to genomic and related phenotypic and clinical data across Europe. Both projects are focused on creating federated and secure infrastructure for researchers to archive and share data with the research community, to support further research.
 
-Please separate paragraphs with a double line.
+
+The project was focused on the data access part of the infrastructure. The files are encrypted in the archives, using the crypt4gh standard [@crypt4gh]. Currently, there exist data access processes, where the files are either decrypted on the server side and then transferred to the user or re-encrypted server-side and provided to the user in an outbox.
+
+
+Htsget [@htsget] as a data access protocol also allows access to parts of files. Before the Biohackathon event, there did not exist any production-level client tools that supports access to encrypted data. The main goal of the project was to create a client tool that can access encrypted data over the htsget protocol, able to work with the GA4GH Passport and Visa standard, which enhances the security of the data access interfaces.
 
 ## Subsection level 2
 
-Please keep sections to a maximum of three levels, even better if only two levels.
+In order to enable for random data access on encrypted files, we worked on the htsget-rs [@htsget-rs], a Rust htsget server to support the aforementioned standards and the sda-download, an implementation handling the data-out API of the archives, developed by the Nordic collaboration under the umbrella of the Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].
+
 
 ### Subsection level 3
 

@@ -48,10 +48,51 @@
 	URL={https://europepmc.org/articles/PMC8728218},
 }
 
-@misc{FEGA,
-    title={Federated EGA},
-    url={https://ega-archive.org/federated},
-    author={EGA\\ Consortium},
-    publisher={EGA},
-    note={Accessed: 2023-03-29}
+@misc{GDI,
+    title={Genomic Data Infrastructure},
+    url={https://gdi.onemilliongenomes.eu/},
+    author={GDI\\ Consortium},
+    publisher={GDI},
+    note={Accessed: 2023-11-02}
+}
+
+@article{crypt4gh,
+    author = {Senf, Alexander and Davies, Robert and Haziza, Frédéric and Marshall, John and Troncoso-Pastoriza, Juan and Hofmann, Oliver and Keane, Thomas M.},
+    title = "{Crypt4GH: a file format standard enabling native access to encrypted data}",
+    journal = {Bioinformatics},
+    volume = {37},
+    number = {17},
+    pages = {2753-2754},
+    year = {2021},
+    month = {02},
+    abstract = "{The majority of genome analysis tools and pipelines require data to be decrypted for access. This potentially leaves sensitive genetic data exposed, either because the unencrypted data is not removed after analysis, or because the data leaves traces on the permanent storage medium.: We defined a file container specification enabling direct byte-level compatible random access to encrypted genetic data stored in community standards such as SAM/BAM/CRAM/VCF/BCF. By standardizing this format, we show how it can be added as a native file format to genomic libraries, enabling direct analysis of encrypted data without the need to create a decrypted copy.The Crypt4GH specification can be found at: http://samtools.github.io/hts-specs/crypt4gh.pdf.Supplementary data are available at Bioinformatics online.}",
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/btab087},
+    url = {https://doi.org/10.1093/bioinformatics/btab087},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/37/17/2753/50339113/btab087.pdf},
+}
+
+@article{htsget,
+    author = {Kelleher, Jerome and Lin, Mike and Albach, C H and Birney, Ewan and Davies, Robert and Gourtovaia, Marina and Glazer, David and Gonzalez, Cristina Y and Jackson, David K and Kemp, Aaron and Marshall, John and Nowak, Andrew and Senf, Alexander and Tovar-Corona, Jaime M and Vikhorev, Alexander and Keane, Thomas M and GA4GH Streaming Task Team },
+    title = "{htsget: a protocol for securely streaming genomic data}",
+    journal = {Bioinformatics},
+    volume = {35},
+    number = {1},
+    pages = {119-121},
+    year = {2018},
+    month = {06},
+    abstract = "{Standardized interfaces for efficiently accessing high-throughput sequencing data are a fundamental requirement for large-scale genomic data sharing. We have developed htsget, a protocol for secure, efficient and reliable access to sequencing read and variation data. We demonstrate four independent client and server implementations, and the results of a comprehensive interoperability demonstration.http://samtools.github.io/hts-specs/htsget.htmlSupplementary data are available at Bioinformatics online.}",
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/bty492},
+    url = {https://doi.org/10.1093/bioinformatics/bty492},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/35/1/119/48962810/bioinformatics\_35\_1\_119.pdf},
+}
+
+
+@misc{htsget-rs,
+    title={htsget rust implementation},
+    url={https://github.com/umccr/htsget-rs},
+    author={htsget-rs team},
+    publisher={htsget-rs team},
+    note={Accessed: 2023-11-02}
 }
