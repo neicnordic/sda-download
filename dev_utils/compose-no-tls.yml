@@ -1,5 +1,4 @@
 services:
-
   db:
     command: server /data
     container_name: db
@@ -72,6 +71,25 @@ services:
     mem_limit: 256m
     ports:
       - "8080:8080"
+    restart: always
+
+  reencrypt:
+    command: sda-reencrypt
+    container_name: reencrypt
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=db
+    image: neicnordic/sda-download:latest
+    build:
+      context: ..
+    volumes:
+      - ./config-notls.yaml:/config.yaml
+      - ./:/dev_utils/
+    mem_limit: 256m
+    ports:
+      - "5051:5051"
     restart: always
 
   mockauth:

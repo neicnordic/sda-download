@@ -2,6 +2,7 @@ package sda
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -12,10 +13,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/neicnordic/crypt4gh/keys"
 	"github.com/neicnordic/crypt4gh/model/headers"
 	"github.com/neicnordic/crypt4gh/streaming"
+	"github.com/neicnordic/sda-download/api/grpc"
 	"github.com/neicnordic/sda-download/api/middleware"
-	"github.com/neicnordic/sda-download/internal/config"
 	"github.com/neicnordic/sda-download/internal/database"
 	"github.com/neicnordic/sda-download/internal/storage"
 	log "github.com/sirupsen/logrus"
@@ -198,26 +200,41 @@ func Download(c *gin.Context) {
 		return
 	}
 
-	// Stitch file and prepare it for streaming
-	fileStream, err := stitchFile(fileDetails.Header, file, coordinates)
-	if err != nil {
-		log.Errorf("could not prepare file for streaming, %s", err)
-		c.String(http.StatusInternalServerError, "file stream error")
+	header := fileDetails.Header
 
-		return
+	if c.GetHeader("Crypt4gh-Public-Key") != "" {
+		clientPublicKey := c.GetHeader("Crypt4gh-Public-Key")
+		header, _ = grpc.GetNewHeader(header, clientPublicKey)
+
+		fileStream := io.MultiReader(bytes.NewReader(header), file)
+
+		sendStream(c.Writer, fileStream)
+
+	} else {
+		// Stitch file and prepare it for streaming
+		fileStream, err := stitchFile(header, file, coordinates)
+		if err != nil {
+			log.Errorf("could not prepare file for streaming, %s", err)
+			c.String(http.StatusInternalServerError, "file stream error")
+
+			return
+		}
+
+		sendStream(c.Writer, fileStream)
 	}
 
-	sendStream(c.Writer, fileStream)
 }
 
 // stitchFile stitches the header and file body together for Crypt4GHReader
 // and returns a streamable Reader
 var stitchFile = func(header []byte, file io.ReadCloser, coordinates *headers.DataEditListHeaderPacket) (*streaming.Crypt4GHReader, error) {
+	publicKey, privateKey, _ := generateFreshKeyPair()
+	newheader, _ := grpc.GetNewHeader(header, publicKey)
 	log.Debugf("stitching header to file %s for streaming", file)
 	// Stitch header and file body together
-	hr := bytes.NewReader(header)
+	hr := bytes.NewReader(newheader)
 	mr := io.MultiReader(hr, file)
-	c4ghr, err := streaming.NewCrypt4GHReader(mr, *config.Config.App.Crypt4GHKey, coordinates)
+	c4ghr, err := streaming.NewCrypt4GHReader(mr, privateKey, coordinates)
 	if err != nil {
 		log.Errorf("failed to create Crypt4GH stream reader, %v", err)
 
@@ -284,4 +301,16 @@ var sendStream = func(w http.ResponseWriter, file io.Reader) {
 	}
 
 	log.Debugf("Sent %d bytes", n)
+}
+
+func generateFreshKeyPair() (string, [32]byte, error) {
+	publicKey, privateKey, err := keys.GenerateKeyPair()
+	if err != nil {
+		log.Errorf("Error while generating key pair: %v", err)
+
+		return "", [32]byte{}, err
+	}
+	log.Debug("Generated a Fresh Keypair")
+
+	return base64.StdEncoding.EncodeToString(publicKey[:]), privateKey, nil
 }

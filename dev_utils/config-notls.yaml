@@ -31,3 +31,7 @@ oidc:
   # oidc configuration API must have values for "userinfo_endpoint" and "jwks_uri"
   configuration:
     url: "http://mockauth:8000/.well-known/openid-configuration"
+
+grpc:
+  host: reencrypt
+  port: 5051

@@ -14,7 +14,7 @@ import (
 )
 
 var requiredConfVars = []string{
-	"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase", "oidc.configuration.url",
+	"db.host", "db.user", "db.password", "db.database", "oidc.configuration.url",
 }
 
 type TestSuite struct {
@@ -26,8 +26,6 @@ func (suite *TestSuite) SetupTest() {
 	viper.Set("db.user", "test")
 	viper.Set("db.password", "test")
 	viper.Set("db.database", "test")
-	viper.Set("c4gh.filepath", "test")
-	viper.Set("c4gh.passphrase", "test")
 	viper.Set("oidc.configuration.url", "test")
 }
 

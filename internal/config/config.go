@@ -34,6 +34,7 @@ type Map struct {
 	DB      DatabaseConfig
 	OIDC    OIDCConfig
 	Archive storage.Conf
+	Grpc    GrpcConfig
 }
 
 type AppConfig struct {
@@ -60,6 +61,13 @@ type AppConfig struct {
 	// Selected middleware for authentication and authorizaton
 	// Optional. Default value is "default" for TokenMiddleware
 	Middleware string
+}
+
+type GrpcConfig struct {
+	AppConfig
+
+	CACert             string
+	ServerNameOverride string
 }
 
 type SessionConfig struct {
@@ -186,7 +194,11 @@ func NewConfig(app string) (*Map, error) {
 	switch app {
 	case "download":
 		requiredConfVars = []string{
-			"db.host", "db.user", "db.password", "db.database", "oidc.configuration.url", "c4gh.filepath", "c4gh.passphrase",
+			"db.host", "db.user", "db.password", "db.database", "oidc.configuration.url",
+		}
+	case "reencrypt":
+		requiredConfVars = []string{
+			"db.host", "db.user", "db.password", "db.database", "c4gh.filepath", "c4gh.passphrase",
 		}
 	default:
 		requiredConfVars = []string{
@@ -221,6 +233,17 @@ func NewConfig(app string) (*Map, error) {
 		}
 
 		err = c.configDatabase()
+		if err != nil {
+			return nil, err
+		}
+	case "reencrypt":
+		viper.SetDefault("grpc.host", "0.0.0.0")
+		viper.SetDefault("grpc.port", 5051)
+		err := c.configDatabase()
+		if err != nil {
+			return nil, err
+		}
+		err = c.grpcServerConfig()
 		if err != nil {
 			return nil, err
 		}
@@ -309,7 +332,7 @@ func (c *Map) configArchive() {
 }
 
 // appConfig sets required settings
-func (c *Map) appConfig() error {
+func (c *Map) appConfig() (err error) {
 	c.App.Host = viper.GetString("app.host")
 	c.App.Port = viper.GetInt("app.port")
 	c.App.ServerCert = viper.GetString("app.servercert")
@@ -322,8 +345,19 @@ func (c *Map) appConfig() error {
 		c.App.Port = 443
 	}
 
-	if viper.IsSet("c4gh.filepath") && viper.IsSet("c4gh.passphrase") {
-		var err error
+	if viper.IsSet("grpc.host") {
+
+		c.Grpc.Host = viper.GetString("grpc.host")
+		c.Grpc.Port = viper.GetInt("grpc.port")
+
+		if viper.IsSet("grpc.cacert") {
+			c.Grpc.CACert = viper.GetString("grpc.cacert")
+		}
+
+		if viper.IsSet("grpc.domain") {
+			c.Grpc.ServerNameOverride = viper.GetString("grpc.domain")
+		}
+	} else {
 		c.App.Crypt4GHKey, err = GetC4GHKey()
 		if err != nil {
 			return err
@@ -333,6 +367,28 @@ func (c *Map) appConfig() error {
 	if !slices.Contains(availableMiddlewares, c.App.Middleware) {
 		err := fmt.Errorf("app.middleware value=%v is not one of allowed values=%v", c.App.Middleware, availableMiddlewares)
 
+		return err
+	}
+
+	return nil
+}
+
+// grpc-server sets required settings
+func (c *Map) grpcServerConfig() (err error) {
+	c.Grpc.Host = viper.GetString("grpc.host")
+	c.Grpc.Port = viper.GetInt("grpc.port")
+	c.Grpc.ServerCert = viper.GetString("grpc.servercert")
+	c.Grpc.ServerKey = viper.GetString("grpc.serverkey")
+
+	if c.Grpc.Port != 5443 && c.Grpc.Port != 5051 {
+		c.Grpc.Port = viper.GetInt("grpc.port")
+	} else if c.Grpc.ServerCert != "" && c.Grpc.ServerKey != "" {
+		c.Grpc.Port = 5443
+	}
+
+	// grpc server is meant to be used with GA4GH key
+	c.Grpc.Crypt4GHKey, err = GetC4GHKey()
+	if err != nil {
 		return err
 	}
 
