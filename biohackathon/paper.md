@@ -48,7 +48,7 @@ group: BioHackrXiv
 event: BioHackathon Europe 2021
 ---
 
-# Introduction or Background
+# Introduction
 
 The European Genome-phenome Archive (EGA) [@EGA] and it's extension the
 Federated EGA (FEGA) (@FEGA) are services for archiving and sharing personally
@@ -56,7 +56,11 @@ identifiable genetic and phenotypic data, while The Genomic Data Infrastructure
 (GDI) [@GDI] project is enabling secondary use of genomic and phenotypic
 clinical data across Europe. Both projects are focused on creating federated
 and secure infrastructure for researchers to archive and share data with the
-research community, to support further research.
+research community, to support further research. In the nordics we collaborate
+on a sofware suite under the NeIC umbrella called the Sensitive Data Archive
+[@ref] to support these efforts.
+
+(work it in Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].)
 
 
 This project was focused on the data access part of the infrastructure. The
@@ -74,23 +78,27 @@ computational resources.
 Htsget [@htsget] as a data access protocol allows access to parts of files.
 Before the Biohackathon event, there were no htsget servers that supported
 partial access to encrypted data. Our goal of the project was to extend the
-htsget-rs [@htsget-rs] server and integrate it into the GDI starter kit to
+htsget-rs [@htsget-rs] Rust server and integrate it into the GDI starter kit to
 support GA4GH Passport authorized, re-encrypted access to partial files.
 
 
-BLA BLA BLA CLIENT
-create a client tool that can access encrypted data over the htsget protocol,
-able to work with the GA4GH Passport and Visa standard, which enhances the
-security of the data access interfaces.
+We also aimed to extend already existing client tools so they can access
+encrypted data over the htsget protocol using GA4GH Passport and Visa standard,
+which enhances the security of the data access interfaces.
 
 
-## Subsection level 2
+# Results
 
-In order to enable for random data access on encrypted files, we worked on the
-htsget-rs [@htsget-rs], a Rust htsget server to support the aforementioned
-standards and the sda-download, an implementation handling the data-out API of
-the archives, developed by the Nordic collaboration under the umbrella of the
-Nordic e-Infrastructure Collaboration(NeIC) [@NEIC].
+
+## HTSGet
+
+
+In order to enable for random data access on encrypted files, we worked on
+extending htsget-rs [@htsget-rs] to work with the sda-download part of the NeIC
+nordic sensitive data archiving suite. We developed the following sequence
+diagram for interactions between the server softwares. Basically it means the
+client first communicates with the Rust server to get information on what to
+download, which it then downloads from the sda-download service.
 
 
 ```mermaid
@@ -110,49 +118,65 @@ sequenceDiagram
     Htsget Client->>Download API: GET File (HTTP HEADER Client-Public-Key)
 ```
 
-### Subsection level 3
 
-Please keep sections to a maximum of three levels.
+## Extend sda-download to support re-encryption
 
-## Tables, figures and so on
 
-Please remember to introduce tables (see Table 1) before they appear on the document. We recommend to center tables, formulas and figure but not the corresponding captions. Feel free to modify the table style as it better suits to your data.
+We also extended the sda-download service to support re-encryption of
+requested files. This so the user can get files encrypted with their own
+keypair instead of just plain unencrypted files. Since we don't want to keep
+the archive secret key in a service that is available directly from the
+internet we have implemented a small microservice (gRPC Server in the diagram)
+that recieves the encrypted header and a public key and re-encrypts and sends
+it back.
 
-Table 1
-| Header 1 | Header 2 |
-| -------- | -------- |
-| item 1 | item 2 |
-| item 3 | item 4 |
 
-Remember to introduce figures (see Figure 1) before they appear on the document. 
+ ```mermaid
+sequenceDiagram
+    client->>sda-download: HTTP Header: Crypt4gh-Public-Key
+    activate sda-download
+    sda-download->>gRPC Server: Request: OldHeader, PublicKey
+    activate gRPC Server
+    gRPC Server->>sda-download: NewHeader
+    deactivate gRPC Server
+    sda-download->>client: encrypted Data
+    deactivate sda-download
+ ```
 
-![BioHackrXiv logo](./biohackrxiv.png)
- 
-Figure 1. A figure corresponding to the logo of our BioHackrXiv preprint.
 
-# Other main section on your manuscript level 1
+## Bits and bobs
 
-Feel free to use numbered lists or bullet points as you need.
-* Item 1
-* Item 2
 
-# Discussion and/or Conclusion
+ * Updated the htsget starter-kit to use the htsget-rs
+ * Enhanced sda-cli with a htsget command
+ * Drank lots of coffee
+ * Found and fixed a bunch of bugs.
+ * Started implementing native support for crypt4gh in htsget-rs
 
-We recommend to include some discussion or conclusion about your work. Feel free to modify the section title as it fits better to your manuscript.
 
 # Future work
 
-And maybe you want to add a sentence or two on how you plan to continue. Please keep reading to learn about citations and references.
 
-For citations of references, we prefer the use of parenthesis, last name and year. If you use a citation manager, Elsevier – Harvard or American Psychological Association (APA) will work. If you are referencing web pages, software or so, please do so in the same way. Whenever possible, add authors and year. We have included a couple of citations along this document for you to get the idea. Please remember to always add DOI whenever available, if not possible, please provide alternative URLs. You will end up with an alphabetical order list by authors’ last name.
+ * Fully implement crypt4gh in htsget-rs
+ * Enable support for crypt4gh edit lists
+ * Authenticating requests/tickets, so the download service can trust that a
+   request came from the htsget-rs service
+ * Remove unnecesarry bytes
+ * Showcase reading an encrypted file over the htsget protocol.
 
-# Jupyter notebooks, GitHub repositories and data repositories
 
-* Please add a list here
-* Make sure you let us know which of these correspond to Jupyter notebooks. Although not supported yet, we plan to add features for them
-* And remember, software and data need a license for them to be used by others, no license means no clear rules so nobody could legally use a non-licensed research object, whatever that object is
+# GitHub repositories
+
+* [GenomicDataInfrastructure/starter-kit-storage-and-interfaces](https://github.com/GenomicDataInfrastructure/starter-kit-storage-and-interfaces)
+* [GenomicDataInfrastructure/starter-kit-htsget](https://github.com/GenomicDataInfrastructure/starer-kit-htsget)
+* [umccr/htsget-rs](https://github.com/umccr/htsget-rs)
+* [neicnordic/sda-download](https://github.com/neicnordic/sda-download)
+* [neicnordic/sensitive-data-archive](https://github.com/neicnordic/sensitive-data-archive)
+* [NBISweden/sda-cli](https://github.com/NBISweden/sda-cli)
+
 
 # Acknowledgements
+TODO Copy from last paper
 Please always remember to acknowledge the BioHackathon, CodeFest, VoCamp, Sprint or similar where this work was (partially) developed.
 
 # References
