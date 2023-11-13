@@ -83,8 +83,16 @@ var getFiles = func(datasetID string, ctx *gin.Context) ([]*database.FileInfo, i
 // Files serves a list of files belonging to a dataset
 func Files(c *gin.Context) {
 
-	// get dataset parameter, remove / prefix and /files suffix
+	// get dataset parameter
 	dataset := c.Param("dataset")
+
+	if !strings.HasSuffix(dataset, "/files") {
+		c.String(http.StatusNotFound, "API path not found, maybe /files is missing")
+
+		return
+	}
+
+	// remove / prefix and /files suffix
 	dataset = strings.TrimPrefix(dataset, "/")
 	dataset = strings.TrimSuffix(dataset, "/files")
 
