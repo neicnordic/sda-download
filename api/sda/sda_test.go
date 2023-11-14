@@ -229,6 +229,12 @@ func TestFiles_Fail(t *testing.T) {
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
+	c.Params = []gin.Param{
+		{
+			Key:   "dataset",
+			Value: "dataset1/files",
+		},
+	}
 
 	// Test the outcomes of the handler
 	Files(c)
@@ -283,6 +289,12 @@ func TestFiles_Success(t *testing.T) {
 	// Mock request and response holders
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
+	c.Params = []gin.Param{
+		{
+			Key:   "dataset",
+			Value: "dataset1/files",
+		},
+	}
 
 	// Test the outcomes of the handler
 	Files(c)
