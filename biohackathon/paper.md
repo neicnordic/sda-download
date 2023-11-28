@@ -116,6 +116,7 @@ sequenceDiagram
     deactivate Download API
     end
     Htsget Client->>Download API: GET File (HTTP HEADER Client-Public-Key)
+    Download API->>Htsget Client: re-encrypted file
 ```
 
 
