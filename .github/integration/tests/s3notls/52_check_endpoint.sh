@@ -86,6 +86,30 @@ else
     echo "Files are different"
 fi
 
+curl -H "Authorization: Bearer $token" "http://localhost:8080/files/urn:neic:001-002?startCoordinate=0&endCoordinate=2" --output test-part.txt
+
+echo "TH" > old-part.txt
+
+cmp --silent old-part.txt test-part.txt
+status=$?
+if [[ $status = 0 ]]; then
+    echo "Files are the same"
+else
+    echo "Files are different"
+fi
+
+curl -H "Authorization: Bearer $token" "http://localhost:8080/files/urn:neic:001-002?startCoordinate=7&endCoordinate=14" --output test-part2.txt
+
+echo "LE IS J" > old-part2.txt
+
+cmp --silent old-part2.txt test-part2.txt
+status=$?
+if [[ $status = 0 ]]; then
+    echo "Files are the same"
+else
+    echo "Files are different"
+fi
+
 # ------------------
 # Test get visas failed
 
