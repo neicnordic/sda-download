@@ -255,6 +255,13 @@ func Download(c *gin.Context) {
 // used from: https://github.com/neicnordic/crypt4gh/blob/master/examples/reader/main.go#L48C1-L113C1
 var sendStream = func(reader *streaming.Crypt4GHReader, writer http.ResponseWriter, start, end int64) error {
 
+	if start != 0 {
+		// We don't want to read from start, skip ahead to where we should be
+		if _, err := reader.Seek(start, 0); err != nil {
+			return err
+		}
+	}
+
 	// Calculate how much we should read (if given)
 	togo := end - start
 
