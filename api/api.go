@@ -32,7 +32,11 @@ func Setup() *http.Server {
 	// Set up routing
 	log.Info("(2/5) Registering endpoint handlers")
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(
+		gin.LoggerWithWriter(gin.DefaultWriter, "/health"),
+		gin.Recovery(),
+	)
 
 	router.HandleMethodNotAllowed = true
 
