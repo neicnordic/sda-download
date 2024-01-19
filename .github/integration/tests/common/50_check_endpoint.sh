@@ -88,6 +88,7 @@ if [[ $status = 0 ]]; then
     echo "Files are the same"
 else
     echo "Files are different"
+    exit 1
 fi
 
 curl --cacert certs/ca.pem -H "Authorization: Bearer $token" "https://localhost:8443/files/urn:neic:001-002?startCoordinate=0&endCoordinate=2" --output test-part.txt
