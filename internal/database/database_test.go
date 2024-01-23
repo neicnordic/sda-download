@@ -317,10 +317,7 @@ func TestGetDatasetFileInfo(t *testing.T) {
 		FROM sda.files f
 		JOIN sda.file_dataset fd ON fd.file_id = f.id
 		JOIN sda.datasets d ON fd.dataset_id = d.id
-		LEFT JOIN \(SELECT file_id,
-					\(ARRAY_AGG\(event ORDER BY started_at DESC\)\)\[1\] AS event
-				FROM sda.file_event_log
-				GROUP BY file_id\) e
+		LEFT JOIN \(SELECT file_id, event FROM sda.file_event_log WHERE event = 'ready'\) e
 		ON f.id = e.file_id
 		LEFT JOIN \(SELECT file_id, checksum, type
 			FROM sda.checksums
@@ -439,7 +436,7 @@ func TestGetFiles(t *testing.T) {
 			FROM sda.files
 			JOIN sda.file_dataset ON file_id = files.id
 			JOIN sda.datasets ON file_dataset.dataset_id = datasets.id
-			LEFT JOIN \(SELECT file_id, \(ARRAY_AGG\(event ORDER BY started_at DESC\)\)\[1\] AS event FROM sda.file_event_log GROUP BY file_id\) log ON files.id = log.file_id
+			LEFT JOIN \(SELECT file_id, event FROM sda.file_event_log WHERE event = 'ready'\) log ON files.id = log.file_id
 			LEFT JOIN \(SELECT file_id, checksum, type FROM sda.checksums WHERE source = 'UNENCRYPTED'\) sha ON files.id = sha.file_id
 			WHERE datasets.stable_id = \$1;
 		`
