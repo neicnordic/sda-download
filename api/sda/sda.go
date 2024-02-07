@@ -249,6 +249,7 @@ func Download(c *gin.Context) {
 
 			return
 		}
+		c.Header("Content-Length", "-1")
 		fileStream = encryptedFileReader
 
 	default:
