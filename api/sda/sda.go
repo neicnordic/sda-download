@@ -201,12 +201,14 @@ func Download(c *gin.Context) {
 	if c.Param("type") == "encrypted" {
 		end = calculateEncryptedEndPosition(start, end, fileDetails)
 		contentLength = int(end)
+		log.Debug("calculated end to", end)
 	}
 	if start == 0 && end == 0 {
 		c.Header("Content-Length", fmt.Sprint(contentLength))
 	} else {
 		// Calculate how much we should read (if given)
 		togo := end - start
+		log.Debug("partial file! set togo to", togo)
 		c.Header("Content-Length", fmt.Sprint(togo))
 	}
 
@@ -352,7 +354,10 @@ var calculateEncryptedEndPosition = func(start, end int64, fileDetails *database
 		log.Debug("headlength size: ", headlength.Size())
 		bodysize := math.Max(float64(togo-headlength.Size()), 0)
 		log.Debug("body size: ", bodysize)
-		bodyEnd = int64(packageSize * math.Ceil(bodysize/packageSize))
+		log.Debug("#packages: ", math.Ceil(bodysize/packageSize))
+		endCoord := packageSize * math.Ceil(bodysize/packageSize)
+		log.Debug("endCoord: ", endCoord)
+		bodyEnd = int64(math.Min(float64(bodyEnd), endCoord))
 		log.Debug("body end: ", bodyEnd)
 	}
 	log.Debug("setting end: ", headlength.Len()+int(bodyEnd))
