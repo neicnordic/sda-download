@@ -250,7 +250,7 @@ func Download(c *gin.Context) {
 		if start > 0 {
 			// unset content-length
 			c.Header("Content-Length", "-1")
-			log.Errorf("Start and end coordinates for encrypted files not implemented! %v", start)
+			log.Errorf("Start coordinate for encrypted files not implemented! %v", start)
 			c.String(http.StatusInternalServerError, "an error occurred")
 
 			return
@@ -352,9 +352,9 @@ var calculateEncryptedEndPosition = func(start, end int64, fileDetails *database
 		log.Debug("headlength size: ", headlength.Size())
 		bodysize := math.Max(float64(togo-headlength.Size()), 0)
 		log.Debug("body size: ", bodysize)
-		bodyEnd := int64(packageSize * math.Ceil(bodysize/packageSize))
+		bodyEnd = int64(packageSize * math.Ceil(bodysize/packageSize))
 		log.Debug("body end: ", bodyEnd)
-		log.Debug("setting end: ", headlength.Len()+int(bodyEnd))
 	}
+	log.Debug("setting end: ", headlength.Len()+int(bodyEnd))
 	return headlength.Size() + bodyEnd
 }
