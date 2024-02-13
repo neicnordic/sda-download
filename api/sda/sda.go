@@ -196,10 +196,15 @@ func Download(c *gin.Context) {
 		return
 	}
 
+	contentLength := fileDetails.DecryptedSize
+	if c.Param("type") == "encrypted" {
+		contentLength = fileDetails.ArchiveSize
+	}
 	if start == 0 && end == 0 {
-		c.Header("Content-Length", fmt.Sprint(fileDetails.DecryptedSize))
+		c.Header("Content-Length", fmt.Sprint(contentLength))
 	} else {
 		// Calculate how much we should read (if given)
+		// TODO incorrect if encrypted
 		togo := end - start
 		c.Header("Content-Length", fmt.Sprint(togo))
 	}
@@ -249,7 +254,6 @@ func Download(c *gin.Context) {
 
 			return
 		}
-		c.Header("Content-Length", "-1")
 		fileStream = encryptedFileReader
 
 	default:
