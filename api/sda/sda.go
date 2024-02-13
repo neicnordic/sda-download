@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -198,13 +199,13 @@ func Download(c *gin.Context) {
 
 	contentLength := fileDetails.DecryptedSize
 	if c.Param("type") == "encrypted" {
-		contentLength = fileDetails.ArchiveSize
+		end = calculateEncryptedEndPosition(start, end, fileDetails)
+		contentLength = int(end)
 	}
 	if start == 0 && end == 0 {
 		c.Header("Content-Length", fmt.Sprint(contentLength))
 	} else {
 		// Calculate how much we should read (if given)
-		// TODO incorrect if encrypted
 		togo := end - start
 		c.Header("Content-Length", fmt.Sprint(togo))
 	}
@@ -246,7 +247,7 @@ func Download(c *gin.Context) {
 
 	switch c.Param("type") {
 	case "encrypted":
-		if start > 0 || end > 0 {
+		if start > 0 {
 			// unset content-length
 			c.Header("Content-Length", "-1")
 			log.Errorf("Start and end coordinates for encrypted files not implemented! %v", start)
@@ -340,4 +341,20 @@ var sendStream = func(reader io.Reader, writer http.ResponseWriter, start, end i
 	}
 
 	return nil
+}
+
+var calculateEncryptedEndPosition = func(start, end int64, fileDetails *database.FileDownload) int64 {
+	headlength := bytes.NewReader(fileDetails.Header)
+	bodyEnd := int64(fileDetails.ArchiveSize)
+	if end > 0 {
+		var packageSize float64 = 64000
+		togo := end - start
+		log.Debug("headlength size: ", headlength.Size())
+		bodysize := math.Max(float64(togo-headlength.Size()), 0)
+		log.Debug("body size: ", bodysize)
+		bodyEnd := int64(packageSize * math.Ceil(bodysize/packageSize))
+		log.Debug("body end: ", bodyEnd)
+		log.Debug("setting end: ", headlength.Len()+int(bodyEnd))
+	}
+	return headlength.Size() + bodyEnd
 }
