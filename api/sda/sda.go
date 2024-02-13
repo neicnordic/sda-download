@@ -349,7 +349,7 @@ var calculateEncryptedEndPosition = func(start, end int64, fileDetails *database
 	headlength := bytes.NewReader(fileDetails.Header)
 	bodyEnd := int64(fileDetails.ArchiveSize)
 	if end > 0 {
-		var packageSize float64 = 64000
+		var packageSize float64 = 65564 // 64KiB+28 but TODO 28 is for chacha20_ietf_poly1305
 		togo := end - start
 		log.Debug("headlength size: ", headlength.Size())
 		bodysize := math.Max(float64(togo-headlength.Size()), 0)
