@@ -204,10 +204,12 @@ func Download(c *gin.Context) {
 		start, end = calculateEncryptedCoords(start, end, c.GetHeader("Range"), fileDetails)
 	}
 	if start == 0 && end == 0 {
+		log.Debug("setting full file length", contentLength)
 		c.Header("Content-Length", fmt.Sprint(contentLength))
 	} else {
 		// Calculate how much we should read (if given)
 		togo := end - start
+		log.Debug("setting full partial length", togo)
 		c.Header("Content-Length", fmt.Sprint(togo))
 	}
 
@@ -256,6 +258,7 @@ func Download(c *gin.Context) {
 	switch c.Param("type") {
 	case "encrypted":
 		if start > 0 {
+			c.Header("Content-Length", "0")
 			log.Errorf("Start coordinate for encrypted files not implemented! %v", start)
 			c.String(http.StatusBadRequest, "Start coordinate for encrypted files not implemented!")
 
@@ -361,6 +364,7 @@ var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileD
 			b, errB := strconv.ParseInt(startEnd[1], 10, 64)
 			if errA == nil && errB == nil && a < b {
 
+				log.Debug("using range from header", a, b)
 				return a, b
 			}
 		}
@@ -375,5 +379,6 @@ var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileD
 		endCoord := packageSize * math.Ceil(bodysize/packageSize)
 		bodyEnd = int64(math.Min(float64(bodyEnd), endCoord))
 	}
+	log.Debug("using range from params", start, headlength.Size()+bodyEnd)
 	return start, headlength.Size() + bodyEnd
 }
