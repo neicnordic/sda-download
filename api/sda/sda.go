@@ -235,6 +235,12 @@ func Download(c *gin.Context) {
 		c.Header("Content-Disposition", fmt.Sprintf("filename: %v", fileID))
 		c.Header("ETag", fileDetails.DecryptedChecksum)
 		c.Header("Last-Modified", lastModified.Format(http.TimeFormat))
+
+		// set the user and server public keys that is send from htsget
+		log.Debugf("Got to setting the headers: %s", c.GetHeader("client-public-key"))
+		c.Header("client-public-key", c.GetHeader("client-public-key"))
+		c.Header("private-public-key", c.GetHeader("private-public-key"))
+
 	}
 
 	if c.Request.Method == http.MethodHead {
@@ -357,7 +363,7 @@ var sendStream = func(reader io.Reader, writer http.ResponseWriter, start, end i
 // it will be used as is. If not, the functions parameters will be used,
 // and adjusted to match the data block boundaries of the encrypted file.
 var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileDetails *database.FileDownload) (int64, int64) {
-	if htsget_range != "" {
+	/* if htsget_range != "" {
 		startEnd := strings.Split(strings.TrimPrefix(htsget_range, "bytes="), "-")
 		if len(startEnd) > 1 {
 			a, errA := strconv.ParseInt(startEnd[0], 10, 64)
@@ -368,7 +374,8 @@ var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileD
 				return a, b
 			}
 		}
-	}
+	} */
+	//log.Debugf("Range found: %d - %d", start, end)
 	// Adapt end coordinate to follow the crypt4gh block boundaries
 	headlength := bytes.NewReader(fileDetails.Header)
 	bodyEnd := int64(fileDetails.ArchiveSize)
