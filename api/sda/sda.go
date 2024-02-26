@@ -360,7 +360,8 @@ var sendStream = func(reader io.Reader, writer http.ResponseWriter, start, end i
 // it will be used as is. If not, the functions parameters will be used,
 // and adjusted to match the data block boundaries of the encrypted file.
 var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileDetails *database.FileDownload) (int64, int64) {
-	if htsget_range != "" {
+	// TODO why removed??
+	/* if htsget_range != "" {
 		startEnd := strings.Split(strings.TrimPrefix(htsget_range, "bytes="), "-")
 		if len(startEnd) > 1 {
 			a, errA := strconv.ParseInt(startEnd[0], 10, 64)
@@ -370,8 +371,8 @@ var calculateEncryptedCoords = func(start, end int64, htsget_range string, fileD
 				return a, b
 			}
 		}
-	}
-	log.Debugf("Range found: %d - %d", start, end)
+	} */
+	// log.Debugf("Range found: %d - %d", start, end)
 	// Adapt end coordinate to follow the crypt4gh block boundaries
 	headlength := bytes.NewReader(fileDetails.Header)
 	bodyEnd := int64(fileDetails.ArchiveSize)
