@@ -1,3 +1,6 @@
+> ### Archival notice
+> :warning: **This repository is no longer maintained. The code has been integrated and it is further developed at: https://github.com/neicnordic/sensitive-data-archive**
+
 [![CodeQL](https://github.com/neicnordic/sda-download/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/neicnordic/sda-download/actions/workflows/codeql-analysis.yml)
 [![Tests](https://github.com/neicnordic/sda-download/actions/workflows/test.yml/badge.svg)](https://github.com/neicnordic/sda-download/actions/workflows/test.yml)
 [![Multilinters](https://github.com/neicnordic/sda-download/actions/workflows/report.yml/badge.svg)](https://github.com/neicnordic/sda-download/actions/workflows/report.yml)
