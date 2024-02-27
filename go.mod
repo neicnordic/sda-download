@@ -2,8 +2,6 @@ module github.com/neicnordic/sda-download
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/aws/aws-sdk-go v1.50.21
